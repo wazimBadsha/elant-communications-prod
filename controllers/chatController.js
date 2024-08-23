@@ -99,7 +99,7 @@ const ignoreRequest = async (req, res) => {
         const { userId } = req.params;
         const { requestId } = req.body;
         const deletedRequest = await chatRequestRepository.deleteChatRequest(requestId);
-
+     
         if (!deletedRequest.deletedCount) {
             return res.status(404).json({ status: "error", message: 'Request not found' });
         }
@@ -119,7 +119,8 @@ const listChatHeads = async (req, res) => {
     try {
         const { userId } = req.params;
         const chatHeads = await chatRequestRepository.listChatHeads(userId);
-        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: chatHeads });
+        const totalRequests = await chatRequestRepository.findChatRequestsByUserIdCount(userId);
+        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: chatHeads , totalRequests: totalRequests});
     } catch (error) {
         console.error('Error listing chat heads:', error);
         res.status(500).json({ status: "error", message: 'Server Error' });

@@ -165,10 +165,6 @@
                 console.log(`User ${senderId} is typing...`);
             });
 
-            socket.on('2', ({ senderId }) => {
-                console.log(`User ${senderId} stopped typing.`);
-            });
-
             socket.on('user stop typing', ({ senderId }) => {
                 console.log(`User ${senderId} stopped typing.`);
             });
@@ -204,8 +200,10 @@
         });
 
         function sendMessage(chatWindow) {
+            console.log("chatWindow-sendMessage",chatWindow)
             const { socket, senderId, receiverId, messageInputId } = config[chatWindow];
             const message = document.getElementById(messageInputId).value.trim();
+            console.log("message-sendMessage",message)
             if (message !== '') {
                 socket.emit('send message', { senderId, receiverId, message });
 
