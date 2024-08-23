@@ -1,0 +1,158 @@
+require('dotenv').config();
+const { io } = require('../utils/socketMain');
+const { getReceivers, addReceiver } = require('../utils/redisUtils');
+const { sendPrivateMessage, isUserBlocked } = require('../utils/chatUtils');
+const { sendPushMessage } = require('./notifications');
+const BlockUser = require('../models/blockedUser');
+const { setupRedisAdapter, pubClient, subClient } = require('./redis');
+
+// After setting up the server and creating the Socket.IO instance:
+await setupRedisAdapter(io);
+
+io.on('connection', (socket) => {
+    socket.on('join', async (senderId) => {
+        try {
+            const userActiveSocketsKey = `activeUsers:${senderId}`;
+            const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+            if (existingSockets.length > 0) {
+                await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+            }
+            await pubClient.sAdd(userActiveSocketsKey, socket.id);
+            socket.join(senderId);
+
+            let receiverIds = await getReceivers(senderId);
+            if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                receiverIds.forEach(receiverId => {
+                    io.to(receiverId).emit('user online', senderId);
+                });
+            }
+        } catch (error) {
+            console.error('Error handling join event:', error);
+        }
+    });
+
+    socket.on('disconnect', async () => {
+        try {
+            const userSocketsKeyPattern = 'activeUsers:*';
+            const keys = await pubClient.keys(userSocketsKeyPattern);
+
+            for (const key of keys) {
+                const activeSockets = await pubClient.sMembers(key);
+                if (activeSockets.includes(socket.id)) {
+                    await pubClient.sRem(key, socket.id);
+                    const senderId = key.split(':')[1];
+                    const receiverIds = await getReceivers(senderId);
+
+                    if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                        receiverIds.forEach(receiverId => {
+                            io.to(receiverId).emit('user offline', senderId);
+                        });
+                    }
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error('Error handling disconnect event:', error);
+        }
+    });
+
+    socket.on('send message', async ({ senderId, receiverId, message, image, parentID }) => {
+        try {
+            if (!message && !image) {
+                throw new Error('Message or image is missing.');
+            }
+
+            if (!senderId || !receiverId) {
+                throw new Error('SenderId or receiverId is missing.');
+            }
+
+            const blocked = await isUserBlocked(senderId, receiverId);
+            if (blocked) {
+                console.log('Message not sent - one of the users has blocked the other.');
+                return;
+            }
+
+            const chat = await sendPrivateMessage(senderId, receiverId, message, image, parentID);
+
+            const mychat = {
+                _id: chat._id,
+                text: chat.message,
+                createdAt: chat.timestamp,
+                repliedTo: parentID,
+                status: 'sent',
+                image: chat.image,
+                receiverId: receiverId,
+                senderId: senderId,
+                user: {
+                    _id: chat?.sender?._id,
+                    name: chat?.sender?.name,
+                    avatar: chat?.sender?.avatar
+                }
+            };
+
+            io.to([senderId, receiverId]).emit('new message', { message: mychat });
+            addReceiver(senderId, receiverId);
+
+            const activeUsersKeys = await pubClient.keys(`activeUsers:${receiverId}`);
+            if (activeUsersKeys.length > 0) {
+                await sendPushMessage(receiverId, message, chat?.sender?.name);
+            }
+        } catch (error) {
+            console.error('Error handling send message event:', error);
+        }
+    });
+
+    socket.on('block user', async ({ blockerId, blockedId }) => {
+        try {
+            const existingBlock = await BlockUser.findOne({
+                $or: [
+                    { sender: blockerId, receiver: blockedId },
+                    { sender: blockedId, receiver: blockerId }
+                ]
+            });
+
+            if (existingBlock) {
+                console.log('Users are already blocked.');
+                return;
+            }
+
+            const blockEntry = new BlockUser({
+                sender: blockerId,
+                receiver: blockedId
+            });
+
+            await blockEntry.save();
+            console.log('User blocked successfully.');
+
+            const activeSockets = await pubClient.sMembers(`activeUsers:${blockedId}`);
+            if (activeSockets.length > 0) {
+                activeSockets.forEach(socketId => {
+                    io.to(socketId).emit('user blocked', blockerId);
+                });
+            }
+        } catch (error) {
+            console.error('Error handling block user event:', error);
+        }
+    });
+
+    socket.on('unblock user', async ({ blockerId, blockedId }) => {
+        try {
+            await BlockUser.deleteOne({
+                $or: [
+                    { sender: blockerId, receiver: blockedId },
+                    { sender: blockedId, receiver: blockerId }
+                ]
+            });
+            console.log('User unblocked successfully.');
+
+            const activeSockets = await pubClient.sMembers(`activeUsers:${blockedId}`);
+            if (activeSockets.length > 0) {
+                activeSockets.forEach(socketId => {
+                    io.to(socketId).emit('user unblocked', blockerId);
+                });
+            }
+        } catch (error) {
+            console.error('Error handling unblock user event:', error);
+        }
+    });
+});

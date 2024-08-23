@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Heads</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #chatHeadsContainer {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .chatHead {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .chatHead:hover {
+            background-color: #f0f0f0;
+        }
+        .chatHead img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .chatHead .info {
+            flex: 1;
+        }
+        .chatHead .info h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .chatHead .info p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div id="chatHeadsContainer">
+        <h1>Chat Heads</h1>
+        <div id="chatHeadsList"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
+    <script>
+        // const socket = io('https://api.elancelearning.ae/');
+        // const socket = io('http://165.22.222.113:3000');
+        const socket = io('http://localhost:3000');
+        const senderId = "659b864ac2220b82711434bc"; 
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            socket.emit('join', senderId);
+            socket.emit('get chat heads', { senderId });
+        });
+
+        socket.on('chat heads', (chatHeads) => {
+            console.log('Received chat heads:', chatHeads);
+            const chatHeadsList = document.getElementById('chatHeadsList');
+            chatHeadsList.innerHTML = ''; 
+            
+            chatHeads.list.forEach(chatHead => {
+                const chatHeadDiv = document.createElement('div');
+                chatHeadDiv.classList.add('chatHead');
+                chatHeadDiv.onclick = () => enterChat(chatHead._id);
+
+                
+                const infoDiv = document.createElement('div');
+                infoDiv.classList.add('info');
+                chatHeadDiv.appendChild(infoDiv);
+                
+                const nameHeading = document.createElement('h2');
+                nameHeading.textContent = chatHead.name;
+                infoDiv.appendChild(nameHeading);
+                
+                const lastMessagePara = document.createElement('p');
+                lastMessagePara.textContent = chatHead.lastMessage.message;
+                infoDiv.appendChild(lastMessagePara);
+                
+                chatHeadsList.appendChild(chatHeadDiv);
+            });
+        });
+
+        function enterChat(receiverId) {
+            window.location.href = `index.html?senderId=${senderId}&receiverId=${receiverId}`;
+        }
+    </script>
+</body>
+</html>

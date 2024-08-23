@@ -1,0 +1,206 @@
+const io = require('socket.io');
+const { createServer } = require('http');
+const { io: clientIo } = require('socket.io-client');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const mongoose = require('mongoose');
+const ChatModel = require('../models/chatModels');
+const BlockUser = require('../models/blockedUser');
+const { createClient } = require('redis');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { getReceivers, addReceiver, isUserBlocked, sendPrivateMessage, sendPushMessage } = require('../utils/socketMain'); // Update path accordingly
+
+let server;
+let ioServer;
+let clientSocket;
+let redisClient;
+
+beforeAll(async () => {
+    // Set up in-memory MongoDB
+    const mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
+
+    // Set up Redis mock
+    redisClient = createClient();
+    await redisClient.connect();
+
+    // Set up HTTP server and Socket.io
+    server = createServer();
+    ioServer = io(server, {
+        transports: ['websocket'],
+    });
+
+    ioServer.adapter(createAdapter(redisClient, redisClient.duplicate()));
+
+    // Start the server
+    server.listen(3000);
+});
+
+afterAll(async () => {
+    // Clean up
+    await mongoose.disconnect();
+    await redisClient.quit();
+    server.close();
+});
+
+beforeEach(() => {
+    clientSocket = clientIo('ws://localhost:3000', {
+        transports: ['websocket'],
+    });
+});
+
+afterEach((done) => {
+    clientSocket.close();
+    done();
+});
+
+describe('Socket.io chat functionality', () => {
+    test('should handle user joining', (done) => {
+        const userId = 'user1';
+
+        ioServer.on('connection', (socket) => {
+            socket.on('join', (senderId) => {
+                expect(senderId).toBe(userId);
+                done();
+            });
+        });
+
+        clientSocket.emit('join', userId);
+    });
+
+    test('should handle user sending a message', async () => {
+        const senderId = 'user1';
+        const receiverId = 'user2';
+        const message = 'Hello';
+        const image = null;
+        const parentID = null;
+
+        ioServer.on('connection', (socket) => {
+            socket.on('send message', async ({ senderId, receiverId, message }) => {
+                expect(senderId).toBe('user1');
+                expect(receiverId).toBe('user2');
+                expect(message).toBe('Hello');
+
+                // Simulate sending a message
+                const chat = await sendPrivateMessage(senderId, receiverId, message, image, parentID);
+                expect(chat).toBeDefined();
+
+                // Check if message is broadcasted
+                socket.to(receiverId).emit('new message', { message: chat });
+
+                // Check if receiver receives the message
+                clientSocket.on('new message', (data) => {
+                    expect(data.message.text).toBe(message);
+                });
+            });
+        });
+
+        clientSocket.emit('send message', { senderId, receiverId, message, image, parentID });
+    });
+
+    test('should handle user typing', (done) => {
+        const senderId = 'user1';
+        const receiverId = 'user2';
+
+        ioServer.on('connection', (socket) => {
+            socket.on('typing', ({ senderId }) => {
+                expect(senderId).toBe('user1');
+                socket.to(receiverId).emit('user typing', { senderId });
+            });
+        });
+
+        clientSocket.emit('typing', { senderId, receiverId });
+        clientSocket.on('user typing', (data) => {
+            expect(data.senderId).toBe(senderId);
+            done();
+        });
+    });
+
+    test('should handle user blocking', (done) => {
+        const senderId = 'user1';
+        const receiverId = 'user2';
+
+        ioServer.on('connection', (socket) => {
+            socket.on('block', async ({ senderId, receiverId }) => {
+                const blockStatus = await BlockUser.findOne({ sender: senderId, receiver: receiverId });
+
+                if (blockStatus) {
+                    await BlockUser.deleteOne({ _id: blockStatus._id });
+                    socket.emit('blockStatusChanged', { success: true, message: 'Unblocked', senderId, receiverId });
+                } else {
+                    await BlockUser.create({ sender: senderId, receiver: receiverId });
+                    socket.emit('blockStatusChanged', { success: true, message: 'Blocked', senderId, receiverId });
+                }
+            });
+        });
+
+        clientSocket.emit('block', { senderId, receiverId });
+        clientSocket.on('blockStatusChanged', (data) => {
+            expect(data.senderId).toBe(senderId);
+            expect(data.receiverId).toBe(receiverId);
+            done();
+        });
+    });
+
+    test('should handle getting messages', async () => {
+        const senderId = 'user1';
+        const receiverId = 'user2';
+        const message = 'Hello';
+        const image = null;
+        const parentID = null;
+
+        await sendPrivateMessage(senderId, receiverId, message, image, parentID);
+
+        ioServer.on('connection', (socket) => {
+            socket.on('get messages', async ({ senderId, receiverId }) => {
+                const messages = await ChatModel.find({
+                    $or: [
+                        { sender: new mongoose.Types.ObjectId(senderId), receiver: new mongoose.Types.ObjectId(receiverId) },
+                        { sender: new mongoose.Types.ObjectId(receiverId), receiver: new mongoose.Types.ObjectId(senderId) }
+                    ]
+                });
+
+                socket.emit('message history', { list: messages });
+            });
+        });
+
+        clientSocket.emit('get messages', { senderId, receiverId });
+        clientSocket.on('message history', (data) => {
+            expect(data.list).toBeDefined();
+            expect(data.list[0].text).toBe(message);
+        });
+    });
+
+    test('should handle getting chat heads', async () => {
+        const senderId = 'user1';
+        const receiverId = 'user2';
+        const message = 'Hello';
+        const image = null;
+        const parentID = null;
+
+        await sendPrivateMessage(senderId, receiverId, message, image, parentID);
+
+        ioServer.on('connection', (socket) => {
+            socket.on('get chat heads', async ({ senderId }) => {
+                const chatHeads = await ChatModel.aggregate([
+                    { $match: { $or: [{ sender: new mongoose.Types.ObjectId(senderId) }, { receiver: new mongoose.Types.ObjectId(senderId) }] } },
+                    { $sort: { timestamp: -1 } },
+                    { $group: { _id: { $cond: [{ $eq: ["$sender", new mongoose.Types.ObjectId(senderId)] }, "$receiver", "$sender"] }, lastMessage: { $first: "$$ROOT" } } },
+                    { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+                    { $unwind: "$user" },
+                    { $lookup: { from: "users", localField: "lastMessage.sender", foreignField: "_id", as: "lastMessage.sender" } },
+                    { $unwind: "$lastMessage.sender" },
+                    { $project: { _id: "$user._id", name: "$user.name", avatar: "$user.avatar", lastMessage: { _id: "$lastMessage._id", message: "$lastMessage.message", image: "$lastMessage.image", timestamp: "$lastMessage.timestamp", status: "$lastMessage.status", sender: { _id: "$lastMessage.sender._id" } } } }
+                ]);
+
+                socket.emit('chat heads', { list: chatHeads });
+            });
+        });
+
+        clientSocket.emit('get chat heads', { senderId });
+        clientSocket.on('chat heads', (data) => {
+            expect(data.list).toBeDefined();
+            expect(data.list[0].lastMessage.message).toBe(message);
+        });
+    });
+});
