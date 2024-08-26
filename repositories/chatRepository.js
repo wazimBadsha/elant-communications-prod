@@ -67,7 +67,7 @@ const findChatHeads = async (senderId) => {
       $project: {
         _id: "$user._id",
         name: "$user.name",
-        avatar: "$user.avatar",
+        avatar_id: "$user.avatar_id",
         lastMessage: {
           _id: "$lastMessage._id",
           message: "$lastMessage.message",
