@@ -1,8 +1,30 @@
 function transformMsgInput(input, userInfo) {
     const output = [];
     try {
-        input.forEach(item => {
-            // First, create the "query" type object
+        input.forEach((item) => {
+            // First, create the "reply" type object
+            item.messageReply.content.forEach((content, i) => {
+                const replyObject = {
+                    type: "reply",
+                    durationInMs: item.durationInMs,
+                    replyContentCount: item.messageReply.content.length,
+                    _id: item.messageReply.id,
+                    messageContentType: content.type,
+                    text: content.text.value,
+                    createdAt: formatTimestamp(item.messageReply.created_at),
+                    user: {
+                        _id: "ai_bot",
+                        name: "aiBot",
+                        avatar: "aiBotAvatarId",
+                    },
+                    image: null,
+                };
+
+                output.push(replyObject);
+            });
+
+
+            // Then, create the "query" type objects
             const queryObject = {
                 durationInMs: item.durationInMs,
                 type: "query",
@@ -12,37 +34,17 @@ function transformMsgInput(input, userInfo) {
                 user: {
                     _id: userInfo._id,
                     name: userInfo.name,
-                    avatar: userInfo.avatar_id
+                    avatar: userInfo.avatar_id,
                 },
-                image: item.image || null
+                image: item.image || null,
             };
 
             output.push(queryObject);
-
-            // Then, create the "reply" type objects based on messageReply content
-            item.messageReply.content.forEach((content, i) => {
-                const replyObject = {
-                    type: "reply",
-                    durationInMs: item.durationInMs,
-                    replyContentCount: item.messageReply.content.length,
-                    _id: item.messageReply.id,
-                    messageContentType: content.type,
-                    text: content.text.value,
-                    createdAt: item.createdAt,
-                   // createdAt: formatTimestamp(item.messageReply.created_at),
-                    user: {
-                        _id: "ai_bot",
-                        name: "aiBot",
-                        avatar: "aiBotAvatarId"
-                    },
-                    image: null
-                };
-
-                output.push(replyObject);
-            });
         });
 
-        return output;
+        // Reverse the order of the array elements
+        return output.reverse();
+
     } catch (error) {
         throw error;
     }
@@ -53,8 +55,7 @@ function formatTimestamp(timestamp) {
     return new Date(timestamp * 1000).toISOString();
 }
 
-    
-function transformSingleAiChatRes(input){
+function transformSingleAiChatRes(input) {
     let output = [];
     input.content.forEach((content, i) => {
         const replyObject = {
@@ -68,9 +69,9 @@ function transformSingleAiChatRes(input){
             user: {
                 _id: "ai_bot",
                 name: "aiBot",
-                avatar: "aiBotAvatarId"
+                avatar: "aiBotAvatarId",
             },
-            image: null
+            image: null,
         };
 
         output.push(replyObject);
@@ -146,5 +147,5 @@ module.exports = { transformMsgInput, transformSingleAiChatRes };
 //       "updatedAt": "2024-08-21T10:44:13.942Z"
 //     }
 //   ];
-  
+
 //   console.log(JSON.stringify(transformInput(input), null, 2));
