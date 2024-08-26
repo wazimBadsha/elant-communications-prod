@@ -156,12 +156,13 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
         socket.on('get messages', async ({ senderId, receiverId }) => {
             try {
                 const messages = await chatRepository.findChatHistory(senderId, receiverId);
-                io.to(senderId).emit('messages', messages);
+                const transformedMsgs = transformChatMsgs(messages)
+                io.to(senderId).emit('messages', transformedMsgs);
             } catch (error) {
                 console.error('routes/socketIO.js-Error fetching messages:', error);
             }
         });
-
+        
         // Handle getting chat heads
         socket.on('get chat heads', async (senderId) => {
             try {

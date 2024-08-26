@@ -12,6 +12,7 @@ function transformMsgInput(input, userInfo) {
                     messageContentType: content.type,
                     text: content.text.value,
                     createdAt: item.createdAt,
+                    //createdAt: formatTimestamp(item.messageReply.created_at),
                     user: {
                         _id: "ai_bot",
                         name: "aiBot",
@@ -79,7 +80,63 @@ function transformSingleAiChatRes(input) {
     return output;
 }
 
-module.exports = { transformMsgInput, transformSingleAiChatRes };
+function transformChatMsgs(input) {
+    return input.map(item => ({
+        text: item.message,
+        createdAt: item.timestamp,
+        image: item.image,
+        status: item.status,
+        send: item.status === "sent" || item.status === "received",
+        received: item.status === "received",
+        pending: false,
+        user: {
+            _id: item.sender._id,
+            name: item.sender.name,
+            avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
+        },
+        _id: item._id
+    }));
+}
+
+// Example usage
+// const input = [
+//     {
+//         "_id": "66c3428c02f769beb8c87f8f",
+//         "sender": {
+//             "_id": "6692424309e33f7ef062f39c",
+//             "name": "Anas"
+//         },
+//         "receiver": {
+//             "_id": "6694c2b84f004062cbd00b5f",
+//             "name": "Suhail"
+//         },
+//         "message": "Hello",
+//         "status": "sent",  
+//         "image": null,
+//         "timestamp": "2024-08-19T13:03:08.648Z",
+//         "__v": 0
+//     },
+//     {
+//         "_id": "66c3429102f769beb8c87f9a",
+//         "sender": {
+//             "_id": "6694c2b84f004062cbd00b5f",
+//             "name": "Suhail"
+//         },
+//         "receiver": {
+//             "_id": "6692424309e33f7ef062f39c",
+//             "name": "Anas"
+//         },
+//         "message": "Hi",
+//         "status": "sent",
+//         "image": null,
+//         "timestamp": "2024-08-19T13:03:13.693Z",
+//         "__v": 0
+//     }
+// ];
+
+// console.log(transformChatMsgs(input));
+
+module.exports = { transformMsgInput, transformSingleAiChatRes, transformChatMsgs };
 
 // // Example usage
 // const input = [
