@@ -1,9 +1,10 @@
 // controllers/chatController.js
 const chatRequestRepository = require('../repositories/chatRequestRepository');
 const userModel = require('../models/userModel');
-const { sendPushMessage } = require('../services/notifications');
+// const { sendPushMessage } = require('../services/notifications');
 const { getBuddyChatHistory } = require('../services/studyBuddyChatServices');
-const { CHAT_STATUS_RECEIVED } = require('../constants/constants');
+const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT } = require('../constants/constants');
+const { sendExpoPushMessage } = require('../services/notificationService');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -31,7 +32,7 @@ const searchUser = async (req, res) => {
         let users = await chatRequestRepository.searchUsers(userId, user);
 
         const requests = await chatRequestRepository.findChatRequestsByUserId(userId);
-        
+
         requests.forEach(request => {
             const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
             if (userIndex !== -1) {
@@ -66,7 +67,8 @@ const sendRequest = async (req, res) => {
 
         let mUser = await userModel.findOne({ _id: userId });
         let message = `You have a study buddy request from ${mUser?.name}.`;
-        sendPushMessage(receiverId, message);
+        sendExpoPushMessage(receiverId, message, "Chat request", existingRequest._id, NOTI_TYPE_CHAT_REQUEST)
+        //sendPushMessage(receiverId, message);
 
         res.status(200).json({ status: "success", message: 'Request sent successfully' });
     } catch (error) {
@@ -87,8 +89,8 @@ const acceptRequest = async (req, res) => {
         }
 
         const message = `You have a study buddy request accepted ${acceptedRequest?.receiver?.name}.`;
-        sendPushMessage(acceptedRequest?.sender?._id, message);
-
+        // sendPushMessage(acceptedRequest?.sender?._id, message);
+        sendExpoPushMessage(acceptedRequest?.sender?._id, message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT)
         res.status(200).json({ status: "success", message: 'Request accepted successfully' });
     } catch (error) {
         console.error('Error accepting request:', error);
@@ -101,7 +103,7 @@ const ignoreRequest = async (req, res) => {
         const { userId } = req.params;
         const { requestId } = req.body;
         const deletedRequest = await chatRequestRepository.deleteChatRequest(requestId);
-     
+
         if (!deletedRequest.deletedCount) {
             return res.status(404).json({ status: "error", message: 'Request not found' });
         }
@@ -122,7 +124,7 @@ const listChatHeads = async (req, res) => {
         const { userId } = req.params;
         const chatHeads = await chatRequestRepository.listChatHeads(userId);
         const totalRequests = await chatRequestRepository.findChatRequestsByUserIdCount(userId);
-        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: chatHeads , totalRequests: totalRequests});
+        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: chatHeads, totalRequests: totalRequests });
     } catch (error) {
         console.error('Error listing chat heads:', error);
         res.status(500).json({ status: "error", message: 'Server Error' });
@@ -131,28 +133,28 @@ const listChatHeads = async (req, res) => {
 
 const getHistoryStudyBuddyChat = async (req, res) => {
     try {
-      const { userId, receiverId } = req.params;
-      if (!userId || !receiverId) {
-        return res.status(400).json({ status: 'error', message: 'userId and receiverId field is required as path param' });
-      }
-  
-      //pagination params
-      const { page = 1, limit = 10 } = req.query;
-      const skip = (page - 1) * limit;
-      const payload = { userId, skip, limit, page, receiverId };
-  
-      const response = await getBuddyChatHistory(payload);
-    
-      res.json({ response });
-      
-  
-    } catch (error) {
-      console.error('controllers/chatController.js-getHistoryOfAiMentorChat Error fetching ai mentor chat history:', error);
-      return res.status(500).json({ status: 'error', message: error.message });
-    }
-  };
+        const { userId, receiverId } = req.params;
+        if (!userId || !receiverId) {
+            return res.status(400).json({ status: 'error', message: 'userId and receiverId field is required as path param' });
+        }
 
-  
+        //pagination params
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+        const payload = { userId, skip, limit, page, receiverId };
+
+        const response = await getBuddyChatHistory(payload);
+
+        res.json({ response });
+
+
+    } catch (error) {
+        console.error('controllers/chatController.js-getHistoryOfAiMentorChat Error fetching ai mentor chat history:', error);
+        return res.status(500).json({ status: 'error', message: error.message });
+    }
+};
+
+
 
 module.exports = {
     listChatRequests,

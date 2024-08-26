@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { sendPrivateMessage, isUserBlocked } = require('../utils/chatUtils');
-const { sendPushMessage } = require('../services/notifications');
+// const { sendPushMessage } = require('../services/notifications');
 const { createClient } = require("redis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const { io } = require('../utils/socketMain');
@@ -9,7 +9,8 @@ const { io } = require('../utils/socketMain');
 const chatRepository = require('../repositories/chatRepository');
 const blockUserRepository = require('../repositories/blockUserRepository');
 const { transformChatMsgs } = require('../transforms/msgTransforms');
-const { CHAT_STATUS_SENT } = require('../constants/constants');
+const { CHAT_STATUS_SENT, NOTI_TYPE_CHAT } = require('../constants/constants');
+const { sendExpoPushMessage } = require('../services/notificationService');
 
 const redisHost = process.env.REDIS_HOST || '127.0.0.1';
 
@@ -115,7 +116,8 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                 addReceiver(senderId, receiverId);
                 const activeUsersKeys = await pubClient.keys(`activeUsers:${receiverId}`);
                 if (activeUsersKeys.length > 0) {
-                    await sendPushMessage(receiverId, message, chat?.sender?.name);
+                    //await sendPushMessage(receiverId, message, chat?.sender?.name);
+                    await sendExpoPushMessage(receiverId, message, chat?.sender?.name, chat?._id, NOTI_TYPE_CHAT)
                 }
             } catch (error) {
                 console.error('routes/socketIO.js-Error handling send message event:', error);

@@ -2,7 +2,7 @@ function transformMsgInput(input, userInfo) {
     const output = [];
     try {
         input.forEach((item) => {
-            // First, create the "reply" type object
+            //First, create the "reply" type object
             item.messageReply.content.forEach((content, i) => {
                 const replyObject = {
                     type: "reply",

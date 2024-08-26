@@ -10,7 +10,8 @@ const { createAdapter } = require("@socket.io/redis-adapter");
 const pubClient = createClient({ url: "redis://redis:6379" });
 const subClient = pubClient.duplicate();
 const { io } = require('../utils/socketMain');
-const { CHAT_STATUS_SENT } = require('../constants/constants');
+const { CHAT_STATUS_SENT, NOTI_TYPE_CHAT } = require('../constants/constants');
+const { sendExpoPushMessage } = require('../services/notificationService');
 require('./gptSocket')
 
 pubClient.on('error', (err) => console.error('Redis Pub Client Error', err));
@@ -202,7 +203,8 @@ io.on('connection', (socket) => {
             const receiverActiveSocketsKey = `activeUsers:${receiverId}`;
             const receiverActiveSockets = await pubClient.sMembers(receiverActiveSocketsKey);
             if (!receiverActiveSockets.length) {
-                sendPushMessage(receiverId, chat.message, chat?.sender?.name);
+                sendExpoPushMessage(receiverId, chat.message, chat?.sender?.name,chat?._id, NOTI_TYPE_CHAT)
+               // sendPushMessage(receiverId, chat.message, chat?.sender?.name);
             }
 
         } catch (error) {
@@ -447,29 +449,4 @@ async function sendPrivateMessage(senderId, receiverId, message, image, parentID
         throw error;
     }
 }
-
-const sendPushMessage = async (receiverId, message, senderName) => {
-    const payload = {
-        app_id: process.env.ONE_SIGNAL_APP_ID,
-        include_external_user_ids: [receiverId],
-        contents: {
-            en: `You have a message from ${senderName} message:${message}`,
-        },
-        data: { type: 'chat' }
-    };
-    const baseUrl = process.env.ONE_SIGNAL_URL;
-    if(!baseUrl || !process.env.ONE_SIGNAL_APP_ID){
-        throw new Error('ONE_SIGNAL_APP_ID or ONE_SIGNAL_URL is not set in env');
-    }
-
-    const response = await axios.post(baseUrl, payload, {
-        headers: {
-            Authorization: process.env.ONE_SIGNAL_SECRET,
-            'Content-Type': 'application/json',
-        },
-    });
-
-    console.log(`routes/socketIO.js-sendPushMessage Push notification sent successfully to user ${receiverId}:`);
-}
-
 module.exports = { io };
