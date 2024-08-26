@@ -28,7 +28,8 @@ function transformMsgInput(input, userInfo) {
                     _id: item.messageReply.id,
                     messageContentType: content.type,
                     text: content.text.value,
-                    createdAt: formatTimestamp(item.messageReply.created_at),
+                    createdAt: item.createdAt,
+                   // createdAt: formatTimestamp(item.messageReply.created_at),
                     user: {
                         _id: "ai_bot",
                         name: "aiBot",
