@@ -8,6 +8,7 @@ const { io } = require('../utils/socketMain');
 // Import repository methods
 const chatRepository = require('../repositories/chatRepository');
 const blockUserRepository = require('../repositories/blockUserRepository');
+const { transformChatMsgs } = require('../transforms/msgTransforms');
 
 const redisHost = process.env.REDIS_HOST || '127.0.0.1';
 
@@ -162,7 +163,7 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                 console.error('routes/socketIO.js-Error fetching messages:', error);
             }
         });
-        
+
         // Handle getting chat heads
         socket.on('get chat heads', async (senderId) => {
             try {
