@@ -203,7 +203,7 @@ io.on('connection', (socket) => {
             const receiverActiveSocketsKey = `activeUsers:${receiverId}`;
             const receiverActiveSockets = await pubClient.sMembers(receiverActiveSocketsKey);
             if (!receiverActiveSockets.length) {
-                sendExpoPushMessage(receiverId, chat.message, chat?.sender?.name,chat?._id, NOTI_TYPE_CHAT)
+                sendExpoPushMessage(receiverId, chat.message, chat?.sender?.name,chat?._id, NOTI_TYPE_CHAT, chat)
                // sendPushMessage(receiverId, chat.message, chat?.sender?.name);
             }
 

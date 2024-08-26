@@ -117,7 +117,7 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                 const activeUsersKeys = await pubClient.keys(`activeUsers:${receiverId}`);
                 if (activeUsersKeys.length > 0) {
                     //await sendPushMessage(receiverId, message, chat?.sender?.name);
-                    await sendExpoPushMessage(receiverId, message, chat?.sender?.name, chat?._id, NOTI_TYPE_CHAT)
+                    await sendExpoPushMessage(receiverId, message, chat?.sender?.name, chat?._id, NOTI_TYPE_CHAT, chat)
                 }
             } catch (error) {
                 console.error('routes/socketIO.js-Error handling send message event:', error);

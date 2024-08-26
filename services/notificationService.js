@@ -136,7 +136,8 @@ async function sendExpoPushMessage(
     msgContent,
     senderName,
     typeId,
-    Type
+    Type,
+    data = null
 ) {
     // Fetch user info from users collection
     const userInfo = await userModel.findOne(

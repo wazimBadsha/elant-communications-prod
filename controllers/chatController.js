@@ -67,7 +67,7 @@ const sendRequest = async (req, res) => {
 
         let mUser = await userModel.findOne({ _id: userId });
         let message = `You have a study buddy request from ${mUser?.name}.`;
-        sendExpoPushMessage(receiverId, message, "Chat request", existingRequest._id, NOTI_TYPE_CHAT_REQUEST)
+        sendExpoPushMessage(receiverId, message, "Chat request", existingRequest._id, NOTI_TYPE_CHAT_REQUEST,existingRequest)
         //sendPushMessage(receiverId, message);
 
         res.status(200).json({ status: "success", message: 'Request sent successfully' });
@@ -90,7 +90,7 @@ const acceptRequest = async (req, res) => {
 
         const message = `You have a study buddy request accepted ${acceptedRequest?.receiver?.name}.`;
         // sendPushMessage(acceptedRequest?.sender?._id, message);
-        sendExpoPushMessage(acceptedRequest?.sender?._id, message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT)
+        sendExpoPushMessage(acceptedRequest?.sender?._id, message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT, acceptedRequest)
         res.status(200).json({ status: "success", message: 'Request accepted successfully' });
     } catch (error) {
         console.error('Error accepting request:', error);
