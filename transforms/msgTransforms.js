@@ -43,7 +43,7 @@ function transformMsgInput(input, userInfo) {
         });
 
         // Reverse the order of the array elements
-        return output.reverse();
+        return output;
 
     } catch (error) {
         throw error;
