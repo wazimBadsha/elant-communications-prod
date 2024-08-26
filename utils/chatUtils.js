@@ -1,7 +1,9 @@
+require('dotenv').config();
 const ChatModel = require('../models/chatModels');
 const BlockUser = require('../models/blockedUser');
 const mongoose = require('mongoose');
 const s3 = require('../services/awsS3');
+const { CHAT_STATUS_SENT } = require('../constants/constants');
 
 const sendPrivateMessage = async (senderId, receiverId, message, image, parentID) => {
     try {
@@ -13,7 +15,7 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, parentID
             const imageFilename = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.jpg`;
 
             const uploadImageParams = {
-                Bucket: 'mybucketelance',
+                Bucket: process.env.AWS_S3_BUCKET_NAME,
                 Key: imageFilename,
                 Body: imageBuffer,
                 ContentType: 'image/jpeg',
@@ -35,7 +37,7 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, parentID
             message: message,
             image: imageLink,
             repliedTo: parentID,
-            status: 'sent',
+            status: CHAT_STATUS_SENT,
         });
 
         await chat.save();

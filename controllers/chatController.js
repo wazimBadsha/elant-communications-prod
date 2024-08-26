@@ -2,6 +2,8 @@
 const chatRequestRepository = require('../repositories/chatRequestRepository');
 const userModel = require('../models/userModel');
 const { sendPushMessage } = require('../services/notifications');
+const { getBuddyChatHistory } = require('../services/studyBuddyChatServices');
+const { CHAT_STATUS_RECEIVED } = require('../constants/constants');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -29,11 +31,11 @@ const searchUser = async (req, res) => {
         let users = await chatRequestRepository.searchUsers(userId, user);
 
         const requests = await chatRequestRepository.findChatRequestsByUserId(userId);
-
+        
         requests.forEach(request => {
             const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
             if (userIndex !== -1) {
-                users[userIndex].chatRequestStatus = 'received';
+                users[userIndex].chatRequestStatus = CHAT_STATUS_RECEIVED;
                 users[userIndex].requestId = requests[userIndex]._id;
             }
         });
@@ -127,6 +129,30 @@ const listChatHeads = async (req, res) => {
     }
 };
 
+const getHistoryStudyBuddyChat = async (req, res) => {
+    try {
+      const { userId, receiverId } = req.params;
+      if (!userId || !receiverId) {
+        return res.status(400).json({ status: 'error', message: 'userId and receiverId field is required as path param' });
+      }
+  
+      //pagination params
+      const { page = 1, limit = 10 } = req.query;
+      const skip = (page - 1) * limit;
+      const payload = { userId, skip, limit, page, receiverId };
+  
+      const response = await getBuddyChatHistory(payload);
+    
+      res.json({ response });
+      
+  
+    } catch (error) {
+      console.error('controllers/chatController.js-getHistoryOfAiMentorChat Error fetching ai mentor chat history:', error);
+      return res.status(500).json({ status: 'error', message: error.message });
+    }
+  };
+
+  
 
 module.exports = {
     listChatRequests,
@@ -134,5 +160,6 @@ module.exports = {
     sendRequest,
     acceptRequest,
     ignoreRequest,
-    listChatHeads
+    listChatHeads,
+    getHistoryStudyBuddyChat
 };

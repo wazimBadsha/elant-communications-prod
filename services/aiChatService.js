@@ -69,6 +69,7 @@ const processChat = async (body) => {
     throw error
   }
 };
+
 //todo: if multiple thread is there for a user then we have to handle it 
 const getAiMentorChatHistory = async (payload) => {
   try {

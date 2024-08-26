@@ -9,6 +9,7 @@ const { io } = require('../utils/socketMain');
 const chatRepository = require('../repositories/chatRepository');
 const blockUserRepository = require('../repositories/blockUserRepository');
 const { transformChatMsgs } = require('../transforms/msgTransforms');
+const { CHAT_STATUS_SENT } = require('../constants/constants');
 
 const redisHost = process.env.REDIS_HOST || '127.0.0.1';
 
@@ -99,7 +100,7 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                     text: chat.message,
                     createdAt: chat.timestamp,
                     repliedTo: parentID,
-                    status: 'sent',
+                    status: CHAT_STATUS_SENT,
                     image: chat.image,
                     receiverId: receiverId,
                     senderId: senderId,

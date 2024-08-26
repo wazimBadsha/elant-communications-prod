@@ -79,7 +79,7 @@ io.on('connection', (socket) => {
                 text: chat.message,
                 createdAt: chat.timestamp,
                 repliedTo: parentID,
-                status: 'sent',
+                status: CHAT_STATUS_SENT,
                 image: chat.image,
                 receiverId: receiverId,
                 senderId: senderId,

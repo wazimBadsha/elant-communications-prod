@@ -1,6 +1,6 @@
 const express = require('express');
 const aiChatController = require('../controllers/aiChatController.js');
-const { listChatRequests, sendRequest, acceptRequest, ignoreRequest, searchUser, listChatHeads } = require('../controllers/chatController.js');
+const { listChatRequests, sendRequest, acceptRequest, ignoreRequest, searchUser, listChatHeads, getHistoryStudyBuddyChat } = require('../controllers/chatController.js');
 
 const router = express.Router();
 
@@ -15,6 +15,7 @@ router.post('/acceptRequest/:userId', acceptRequest)
 router.post('/ignoreRequest/:userId', ignoreRequest)
 router.post('/searchUser/:userId', searchUser)
 router.post('/listChatHeads/:userId', listChatHeads)
+router.get('/buddy-chat-history/:userId/:receiverId', getHistoryStudyBuddyChat);
 
 
 module.exports = router;

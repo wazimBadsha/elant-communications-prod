@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const ChatModel = require('../models/chatModels');
 const UserModel = require('../models/userModel');  // Import the User model
+const { CHAT_STATUS_SEEN } = require('../constants/constants');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -17,7 +18,7 @@ const findChatHistory = async (senderId, receiverId) => {
       { sender: new mongoose.Types.ObjectId(senderId), receiver: new mongoose.Types.ObjectId(receiverId) },
       { sender: new mongoose.Types.ObjectId(receiverId), receiver: new mongoose.Types.ObjectId(senderId) }
     ],
-    status: { $ne: 'seen' }
+    status: { $ne: CHAT_STATUS_SEEN }
   }).sort({ timestamp: 1 }).populate('sender', '_id name avatar_id').populate('receiver', '_id name avatar_id');
 };
 
@@ -29,7 +30,7 @@ const findChatHeads = async (senderId) => {
           { sender: new mongoose.Types.ObjectId(senderId) },
           { receiver: new mongoose.Types.ObjectId(senderId) }
         ],
-        status: { $ne: 'seen' }
+        status: { $ne: CHAT_STATUS_SEEN }
       }
     },
     {
@@ -87,7 +88,7 @@ const updateDeliveredStatus = async (messageIds) => {
   try {
     await ChatModel.updateMany(
       { _id: { $in: messageIds } },
-      { $set: { status: 'seen' } }
+      { $set: { status: CHAT_STATUS_SEEN } }
     );
     console.log(`repositories/aiChatRepository.js-Messages marked as seen successfully. messageIds: ${messageIds}`);
   } catch (error) {

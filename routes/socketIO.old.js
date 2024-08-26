@@ -9,7 +9,8 @@ const { createClient } = require("redis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const pubClient = createClient({ url: "redis://redis:6379" });
 const subClient = pubClient.duplicate();
-const { io } = require('../utils/socketMain')
+const { io } = require('../utils/socketMain');
+const { CHAT_STATUS_SENT } = require('../constants/constants');
 require('./gptSocket')
 
 pubClient.on('error', (err) => console.error('Redis Pub Client Error', err));
@@ -141,7 +142,7 @@ io.on('connection', (socket) => {
                 text: chat.message,
                 createdAt: chat.timestamp,
                 repliedTo: parentID,
-                status: 'sent',
+                status: CHAT_STATUS_SENT,
                 image: chat.image,
                 receiverId: receiverId,
                 senderId: senderId,
@@ -170,7 +171,7 @@ io.on('connection', (socket) => {
                     message: mychat.text,
                     image: mychat.image,
                     timestamp: mychat.createdAt,
-                    status: 'sent',
+                    status: CHAT_STATUS_SENT,
                     sender: {
                         _id: mychat?.user?._id
                     }
@@ -187,7 +188,7 @@ io.on('connection', (socket) => {
                     message: mychat.text,
                     image: mychat.image,
                     timestamp: mychat.createdAt,
-                    status: 'sent',
+                    status: CHAT_STATUS_SENT,
                     sender: {
                         _id: mychat?.user?._id
                     }
@@ -213,7 +214,7 @@ io.on('connection', (socket) => {
     //     try {
     //         await ChatModel.updateMany(
     //             { _id: { $in: messageIds } }, 
-    //             { $set: { status: 'seen' } } 
+    //             { $set: { status: CHAT_STATUS_SEEN } } 
     //         );
     //         console.log('Messages marked as seen successfully.');
     //     } catch (error) {
@@ -269,7 +270,7 @@ io.on('connection', (socket) => {
                     { $and: [{ sender: new ObjectId(senderId) }, { receiver: new ObjectId(receiverId) }] },
                     { $and: [{ sender: new ObjectId(receiverId) }, { receiver: new ObjectId(senderId) }] }
                 ],
-                status: { $ne: 'seen' }
+                status: { $ne: CHAT_STATUS_SEEN  }
             }).sort({ timestamp: -1 })
                 // .skip(skip)
                 // .limit(pageSize)
@@ -314,7 +315,7 @@ io.on('connection', (socket) => {
                             { sender: new mongoose.Types.ObjectId(senderId) },
                             { receiver: new mongoose.Types.ObjectId(senderId) }
                         ],
-                        status: { $ne: 'seen' }
+                        status: { $ne: CHAT_STATUS_SEEN}
                     }
                 },
                 {
@@ -430,7 +431,7 @@ async function sendPrivateMessage(senderId, receiverId, message, image, parentID
             message: message,
             image: imageLink,
             repliedTo: parentID,
-            status: 'sent',
+            status: CHAT_STATUS_SENT,
         });
 
         await chat.save();
