@@ -149,7 +149,7 @@ const getHistoryStudyBuddyChat = async (req, res) => {
 
 
     } catch (error) {
-        console.error('controllers/chatController.js-getHistoryOfAiMentorChat Error fetching ai mentor chat history:', error);
+        console.error('controllers/chatController.js-getHistoryStudyBuddyChat Error fetching chat history:', error);
         return res.status(500).json({ status: 'error', message: error.message });
     }
 };
