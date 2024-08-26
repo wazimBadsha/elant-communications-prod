@@ -218,7 +218,7 @@
                 messageDiv.classList.add('message');
 
                 // Check if the message is from the sender or receiver
-                if (isHistory && message.sender._id === config[chatMessagesId.split('Messages')[1]].senderId) {
+                if (isHistory && message.user._id === config[chatMessagesId.split('Messages')[1]].senderId) {
                     messageDiv.classList.add('senderMessage');
                     messageDiv.textContent = message.message || "Message content failed";
                 } else if (isHistory) {
@@ -233,7 +233,7 @@
                     const date = new Date(message.timestamp);
                     const formattedDate = date.toLocaleString(); // You can customize the format if needed
 
-                    messageSenderDiv.textContent = `${message.sender.name || "SENDER NAME"} - ${formattedDate}`;
+                    messageSenderDiv.textContent = `${message.user.name || "SENDER NAME"} - ${formattedDate}`;
                     messageDiv.appendChild(messageSenderDiv);
                     chatMessages.appendChild(messageDiv);
                 } else {
