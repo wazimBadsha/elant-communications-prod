@@ -94,7 +94,7 @@ const getAiMentorChatHistory = async (payload) => {
           updatedAt: 1,
         }
       },
-      { $sort: { updatedAt: -1 } },
+      { $sort: { updatedAt: 1 } },
       { $skip: skip },
       { $limit: parseInt(limit) }
     ]);
