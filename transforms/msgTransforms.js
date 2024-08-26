@@ -89,6 +89,11 @@ function transformChatMsgs(input) {
         send: item.status === "sent" || item.status === "received",
         received: item.status === "received",
         pending: false,
+        receiver: {
+            _id: item.receiver._id,
+            name: item.receiver.name,
+            avatar: item.receiver.avatar_id || null
+        },
         user: {
             _id: item.sender._id,
             name: item.sender.name,
