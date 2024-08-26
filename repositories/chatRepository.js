@@ -19,7 +19,7 @@ const findChatHistory = async (senderId, receiverId) => {
       { sender: new mongoose.Types.ObjectId(receiverId), receiver: new mongoose.Types.ObjectId(senderId) }
     ],
     status: { $ne: CHAT_STATUS_SEEN }
-  }).sort({ timestamp: 1 }).populate('sender', '_id name avatar_id').populate('receiver', '_id name avatar_id');
+  }).sort({ timestamp: -1 }).populate('sender', '_id name avatar_id').populate('receiver', '_id name avatar_id');
 };
 
 const findChatHeads = async (senderId) => {
