@@ -35,9 +35,14 @@ const getReceivers = async (senderId) => {
 
 const addReceiver = async (senderId, receiverId) => {
     const key = `senderReceivers:${senderId}`;
-    console.log("senderReceivers-key",key)
+    console.log("senderReceivers-key", key)
     console.log(`routes/socketIO.js-addReceiver Attempting to add receiver ${receiverId} to sender ${senderId}`);
     const isMember = await pubClient.sIsMember(key, receiverId);
+    const isSenderOnline = await pubClient.sIsMember(`activeUsers:${senderId}`, senderId);
+    if (isSenderOnline) {
+        console.log("addReceiver_ONLINE_STATUS_UPDATE")
+        io.to(receiverId).emit('user online', senderId);
+    }
     if (isMember) {
         console.log(`routes/socketIO.js- addReceiver Receiver ${receiverId} already exists for sender ${senderId}.`);
         return false;
@@ -85,7 +90,7 @@ const addReceiver = async (senderId, receiverId) => {
                 socket.join(senderId);
                 // await addReceiver(senderId, acceptedRequest.receiver._id.toString());
                 // await addReceiver(acceptedRequest.receiver._id.toString(),senderId);
-    
+
                 // Emit user online event to all receivers
                 let receiverIds = await getReceivers(senderId);
                 console.log(`in join RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
@@ -191,7 +196,18 @@ const addReceiver = async (senderId, receiverId) => {
                 io.to([senderId, receiverId]).emit('new message', { message: mychat });
                 await addReceiver(senderId, receiverId);
                 const activeUsersKeys = await pubClient.keys(`activeUsers:${receiverId}`);
+                //test code end
+                // Add the new receiver to the sender's receiver list
+        
 
+                // Emit online status to the new receiver
+                const isSenderOnline = await pubClient.sIsMember(`activeUsers:${senderId}`, senderId);
+                if (isSenderOnline) {
+                    console.log("SENDMESSAGE_ONLINE_STATUS_UPDATE")
+                    io.to(receiverId).emit('user online', senderId);
+                }
+
+                //test code end
                 //update online status to recievers.
                 let receiverIds = await getReceivers(senderId);
                 console.log(`in send message RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
@@ -345,4 +361,4 @@ const addReceiver = async (senderId, receiverId) => {
 
 })();
 
-module.exports = { io , addReceiver, getReceivers };
+module.exports = { io, addReceiver, getReceivers };
