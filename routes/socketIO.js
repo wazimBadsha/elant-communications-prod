@@ -198,7 +198,7 @@ const addReceiver = async (senderId, receiverId) => {
                 const activeUsersKeys = await pubClient.keys(`activeUsers:${receiverId}`);
                 //test code end
                 // Add the new receiver to the sender's receiver list
-        
+
 
                 // Emit online status to the new receiver
                 const isSenderOnline = await pubClient.sIsMember(`activeUsers:${senderId}`, senderId);
@@ -297,7 +297,14 @@ const addReceiver = async (senderId, receiverId) => {
         socket.on('get messages', async ({ senderId, receiverId }) => {
             try {
                 const messages = await chatRepository.findChatHistory(senderId, receiverId);
-                const transformedMsgs = transformChatMsgs(messages)
+                const userActiveSocketsKey = `activeUsers:${senderId}`;
+                let isSenderOnline = isSenderOnline;
+                isSenderOnline = await pubClient.sIsMember(userActiveSocketsKey, senderId);
+                if (isSenderOnline) {
+                    io.to(receiverId).emit('user online', senderId);
+
+                }
+                const transformedMsgs = transformChatMsgs(messages,isSenderOnline)
                 io.to(senderId).emit('messages', transformedMsgs);
             } catch (error) {
                 console.error('routes/socketIO.js-Error fetching messages:', error);

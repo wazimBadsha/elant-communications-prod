@@ -80,7 +80,7 @@ function transformSingleAiChatRes(input) {
     return output;
 }
 
-function transformChatMsgs(input) {
+function transformChatMsgs(input, isSenderOnline) {
     return input.map(item => ({
         text: item.message,
         createdAt: item.timestamp,
@@ -95,6 +95,7 @@ function transformChatMsgs(input) {
             avatar: item.receiver.avatar_id || null
         },
         user: {
+            online: isSenderOnline,
             _id: item.sender._id,
             name: item.sender.name,
             avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
