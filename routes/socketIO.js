@@ -171,6 +171,21 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
         socket.on('get chat heads', async (senderId) => {
             try {
                 const chatHeads = await chatRepository.findChatHeads(senderId);
+          
+                const userActiveSocketsKey = `activeUsers:${senderId}`;
+                const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+                if (existingSockets.length > 0) {
+                    await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+                }
+                await pubClient.sAdd(userActiveSocketsKey, socket.id);
+                socket.join(senderId);
+
+                let receiverIds = await getReceivers(senderId);
+                if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                    receiverIds.forEach(receiverId => {
+                        io.to(receiverId).emit('user online', senderId);
+                    });
+                }
                 io.to(senderId).emit('chat heads', chatHeads);
             } catch (error) {
                 console.error('routes/socketIO.js-Error fetching chat heads:', error);
