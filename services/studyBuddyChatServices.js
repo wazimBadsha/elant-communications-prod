@@ -22,11 +22,11 @@ const getBuddyChatHistory = async (payload) => {
         { sender: new mongoose.Types.ObjectId(userId), receiver: new mongoose.Types.ObjectId(receiverId) },
         { sender: new mongoose.Types.ObjectId(receiverId), receiver: new mongoose.Types.ObjectId(userId) }
       ],
-      status: { $ne: CHAT_STATUS_SEEN }
+      status: { $eq: CHAT_STATUS_SEEN }
     }).skip(skip).limit(parseInt(limit)).sort({ timestamp: -1 }).populate('sender', '_id name avatar_id').populate('receiver', '_id name avatar_id');
 
-    if (!msgHistoryInfo.length) {
-      return { status: "error", message: 'Study buddy chat history is not found for the given receiver and user ids', data: [] };
+    if (msgHistoryInfo.length == 0) {
+      return { status: "success", message: 'Study buddy chat history is not found for the given receiver and user ids', data: [] };
     }
 
     let messageHistory = [];
