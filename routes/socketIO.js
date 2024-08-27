@@ -13,23 +13,67 @@ const { CHAT_STATUS_SENT, NOTI_TYPE_CHAT } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
 
 const redisHost = process.env.REDIS_HOST || '127.0.0.1';
+const pubClient = createClient({ url: `redis://${redisHost}:6379` });
+const subClient = pubClient.duplicate();
+pubClient.on('error', (err) => console.error('routes/socketIO.js-Redis Pub Client Error', err));
+subClient.on('error', (err) => console.error('routes/socketIO.js-Redis Sub Client Error', err));
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('routes/socketIO.js-Redis adapter has been set up successfully.');
+}).catch(err => {
+    console.error('routes/socketIO.js-Error setting up Redis adapter:', err);
+});
+
+const getReceivers = async (senderId) => {
+    const key = `senderReceivers:${senderId}`;
+    let receivers = await pubClient.sMembers(key);
+    if (!receivers) {
+        return null;
+    }
+    return receivers;
+};
+
+const addReceiver = async (senderId, receiverId) => {
+    const key = `senderReceivers:${senderId}`;
+    console.log("senderReceivers-key",key)
+    console.log(`routes/socketIO.js-addReceiver Attempting to add receiver ${receiverId} to sender ${senderId}`);
+    const isMember = await pubClient.sIsMember(key, receiverId);
+    if (isMember) {
+        console.log(`routes/socketIO.js- addReceiver Receiver ${receiverId} already exists for sender ${senderId}.`);
+        return false;
+    } else {
+        await pubClient.sAdd(key, receiverId);
+        console.log(`routes/socketIO.js- addReceiver Receiver ${receiverId} added to sender ${senderId}.`);
+        return true;
+    }
+};
 
 
 (async () => {
     require('./gptSocket');
-    const pubClient = createClient({ url: `redis://${redisHost}:6379` });
-    const subClient = pubClient.duplicate();
-    pubClient.on('error', (err) => console.error('routes/socketIO.js-Redis Pub Client Error', err));
-    subClient.on('error', (err) => console.error('routes/socketIO.js-Redis Sub Client Error', err));
-    Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
-        io.adapter(createAdapter(pubClient, subClient));
-        console.log('routes/socketIO.js-Redis adapter has been set up successfully.');
-    }).catch(err => {
-        console.error('routes/socketIO.js-Error setting up Redis adapter:', err);
-    });
-
     io.on('connection', (socket) => {
         // Handle user joining the chat
+        // socket.on('join', async (senderId) => {
+        //     try {
+        //         const userActiveSocketsKey = `activeUsers:${senderId}`;
+        //         const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+        //         if (existingSockets.length > 0) {
+        //             await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+        //         }
+        //         await pubClient.sAdd(userActiveSocketsKey, socket.id);
+        //         socket.join(senderId);
+
+        //         let receiverIds = await getReceivers(senderId);
+        //         if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+        //             receiverIds.forEach(receiverId => {
+        //                 io.to(receiverId).emit('user online', senderId);
+        //             });
+        //         }
+        //     } catch (error) {
+        //         console.error('routes/socketIO.js-Error handling join event:', error);
+        //     }
+        // });
+
         socket.on('join', async (senderId) => {
             try {
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
@@ -39,19 +83,49 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                 }
                 await pubClient.sAdd(userActiveSocketsKey, socket.id);
                 socket.join(senderId);
-
+                // await addReceiver(senderId, acceptedRequest.receiver._id.toString());
+                // await addReceiver(acceptedRequest.receiver._id.toString(),senderId);
+    
+                // Emit user online event to all receivers
                 let receiverIds = await getReceivers(senderId);
-                if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                console.log(`in join RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+                if (receiverIds && receiverIds.length > 0) {
                     receiverIds.forEach(receiverId => {
+                        console.log(`pushing USER ${senderId} online in join `)
                         io.to(receiverId).emit('user online', senderId);
                     });
                 }
             } catch (error) {
-                console.error('routes/socketIO.js-Error handling join event:', error);
+                console.error('Error handling join event:', error);
             }
         });
 
-        // Handle user disconnecting from the chat
+        // // Handle user disconnecting from the chat
+        // socket.on('disconnect', async () => {
+        //     try {
+        //         const userSocketsKeyPattern = 'activeUsers:*';
+        //         const keys = await pubClient.keys(userSocketsKeyPattern);
+
+        //         for (const key of keys) {
+        //             const activeSockets = await pubClient.sMembers(key);
+        //             if (activeSockets.includes(socket.id)) {
+        //                 await pubClient.sRem(key, socket.id);
+        //                 const senderId = key.split(':')[1];
+        //                 const receiverIds = await getReceivers(senderId);
+
+        //                 if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+        //                     receiverIds.forEach(receiverId => {
+        //                         io.to(receiverId).emit('user offline', senderId);
+        //                     });
+        //                 }
+        //                 break;
+        //             }
+        //         }
+        //     } catch (error) {
+        //         console.error('routes/socketIO.js-Error handling disconnect event:', error);
+        //     }
+        // });
+
         socket.on('disconnect', async () => {
             try {
                 const userSocketsKeyPattern = 'activeUsers:*';
@@ -63,9 +137,11 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                         await pubClient.sRem(key, socket.id);
                         const senderId = key.split(':')[1];
                         const receiverIds = await getReceivers(senderId);
-
+                        console.log(`in disconnect RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+                        // Emit user offline event to all receivers
                         if (Array.isArray(receiverIds) && receiverIds.length > 0) {
                             receiverIds.forEach(receiverId => {
+                                console.log(`pushing USER ${senderId} offline in disconnect`)
                                 io.to(receiverId).emit('user offline', senderId);
                             });
                         }
@@ -73,7 +149,7 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                     }
                 }
             } catch (error) {
-                console.error('routes/socketIO.js-Error handling disconnect event:', error);
+                console.error('routes/socketIO.js- Error handling disconnect event:', error);
             }
         });
 
@@ -113,11 +189,22 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
                 };
 
                 io.to([senderId, receiverId]).emit('new message', { message: mychat });
-                addReceiver(senderId, receiverId);
+                await addReceiver(senderId, receiverId);
                 const activeUsersKeys = await pubClient.keys(`activeUsers:${receiverId}`);
+
+                //update online status to recievers.
+                let receiverIds = await getReceivers(senderId);
+                console.log(`in send message RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+                if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                    receiverIds.forEach(receiverId => {
+                        console.log(`pushing USER ${senderId} online in send message `)
+                        io.to(receiverId).emit('user online', senderId);
+                    });
+                }
+
                 if (activeUsersKeys.length > 0) {
                     //await sendPushMessage(receiverId, message, chat?.sender?.name);
-                    await sendExpoPushMessage(receiverId, message, chat?.sender?.name, chat?._id, NOTI_TYPE_CHAT, chat)
+                    await sendExpoPushMessage(receiverId.toString(), message, chat?.sender?.name, chat?._id, NOTI_TYPE_CHAT, chat)
                 }
             } catch (error) {
                 console.error('routes/socketIO.js-Error handling send message event:', error);
@@ -128,6 +215,40 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
         socket.on('typing', ({ senderId, receiverId }) => {
             io.to(receiverId).emit('user typing', { senderId });
         });
+
+        socket.on('user status up', async (senderId) => {
+            const userActiveSocketsKey = `activeUsers:${senderId}`;
+            const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+            if (existingSockets.length > 0) {
+                await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+            }
+            await pubClient.sAdd(userActiveSocketsKey, socket.id);
+            let receiverIds = await getReceivers(senderId);
+            console.log(`in send message RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+            if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                receiverIds.forEach(receiverId => {
+                    console.log(`pushing USER ${senderId} online in send message `)
+                    io.to(receiverId).emit('user online', senderId);
+                });
+            }
+        });
+
+        socket.on('user status down', async (senderId) => {
+            const userActiveSocketsKey = `activeUsers:${senderId}`;
+            const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+            if (existingSockets.length > 0) {
+                await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+            }
+            let receiverIds = await getReceivers(senderId);
+            console.log(`in send message RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+            if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                receiverIds.forEach(receiverId => {
+                    console.log(`pushing USER ${senderId} online in send message `)
+                    io.to(receiverId).emit('user offine', senderId);
+                });
+            }
+        });
+
 
         // Handle stop typing indicator
         socket.on('stop typing', ({ senderId, receiverId }) => {
@@ -171,18 +292,26 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
         socket.on('get chat heads', async (senderId) => {
             try {
                 const chatHeads = await chatRepository.findChatHeads(senderId);
-          
+
+                // const userActiveSocketsKey = `activeUsers:${senderId}`;
+                // const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+                // if (existingSockets.length > 0) {
+                //     await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+                // }
+                // await pubClient.sAdd(userActiveSocketsKey, socket.id);
+                // socket.join(senderId);
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
                 const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
                 if (existingSockets.length > 0) {
                     await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
                 }
                 await pubClient.sAdd(userActiveSocketsKey, socket.id);
-                socket.join(senderId);
-
+                // Emit user online event to all receivers
                 let receiverIds = await getReceivers(senderId);
-                if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+                console.log(`in getChatHeads RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+                if (receiverIds && receiverIds.length > 0) {
                     receiverIds.forEach(receiverId => {
+                        console.log(`pushing USER ${senderId} online in getChatHeads `)
                         io.to(receiverId).emit('user online', senderId);
                     });
                 }
@@ -213,29 +342,7 @@ const redisHost = process.env.REDIS_HOST || '127.0.0.1';
         });
     });
 
-    const getReceivers = async (senderId) => {
-        const key = `senderReceivers:${senderId}`;
-        let receivers = await pubClient.sMembers(key);
-        if (!receivers) {
-            return null;
-        }
-        return receivers;
-    };
-
-    const addReceiver = async (senderId, receiverId) => {
-        const key = `senderReceivers:${senderId}`;
-        console.log(`utils/redisUtils.js-Attempting to add receiver ${receiverId} to sender ${senderId}`);
-        const isMember = await pubClient.sIsMember(key, receiverId);
-        if (isMember) {
-            console.log(`utils/redisUtils.js-Receiver ${receiverId} already exists for sender ${senderId}.`);
-            return false;
-        } else {
-            await pubClient.sAdd(key, receiverId);
-            console.log(`utils/redisUtils.js-Receiver ${receiverId} added to sender ${senderId}.`);
-            return true;
-        }
-    };
 
 })();
 
-module.exports = { io };
+module.exports = { io , addReceiver, getReceivers };

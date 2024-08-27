@@ -156,7 +156,7 @@ io.on('connection', (socket) => {
 
             io.to([senderId, receiverId]).emit('new message', { message: mychat });
 
-            addReceiver(senderId, receiverId)
+            await addReceiver(senderId, receiverId)
 
             const activeUsersKeys = await pubClient.keys('activeUsers:*');
 
@@ -203,7 +203,7 @@ io.on('connection', (socket) => {
             const receiverActiveSocketsKey = `activeUsers:${receiverId}`;
             const receiverActiveSockets = await pubClient.sMembers(receiverActiveSocketsKey);
             if (!receiverActiveSockets.length) {
-                sendExpoPushMessage(receiverId, chat.message, chat?.sender?.name,chat?._id, NOTI_TYPE_CHAT, chat)
+                sendExpoPushMessage(receiverId.toString(), chat.message, chat?.sender?.name,chat?._id, NOTI_TYPE_CHAT, chat)
                // sendPushMessage(receiverId, chat.message, chat?.sender?.name);
             }
 
@@ -438,8 +438,8 @@ async function sendPrivateMessage(senderId, receiverId, message, image, parentID
 
         await chat.save();
         await chat.populate([
-            { path: 'sender', select: '_id avatar name' },
-            { path: 'receiver', select: '_id avatar name' }
+            { path: 'sender', select: '_id avatar_id name' },
+            { path: 'receiver', select: '_id avatar_id name' }
         ]);
 
         return chat;

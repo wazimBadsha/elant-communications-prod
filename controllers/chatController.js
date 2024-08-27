@@ -5,6 +5,7 @@ const userModel = require('../models/userModel');
 const { getBuddyChatHistory } = require('../services/studyBuddyChatServices');
 const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
+const { addReceiver } = require('../routes/socketIO');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -63,11 +64,12 @@ const sendRequest = async (req, res) => {
             return res.status(400).json({ message: 'A request already exists between these users' });
         }
 
-        await chatRequestRepository.createChatRequest(userId, receiverId);
+        const chatRequest = await chatRequestRepository.createChatRequest(userId, receiverId);
 
         let mUser = await userModel.findOne({ _id: userId });
         let message = `You have a study buddy request from ${mUser?.name}.`;
-        sendExpoPushMessage(receiverId, message, "Chat request", existingRequest._id, NOTI_TYPE_CHAT_REQUEST,existingRequest)
+        console.log("CHAT_REQUEST",chatRequest)
+        sendExpoPushMessage(receiverId.toString(), message, "Chat request", chatRequest._id, NOTI_TYPE_CHAT_REQUEST, chatRequest)
         //sendPushMessage(receiverId, message);
 
         res.status(200).json({ status: "success", message: 'Request sent successfully' });
@@ -87,10 +89,16 @@ const acceptRequest = async (req, res) => {
         if (!acceptedRequest) {
             return res.status(404).json({ status: "error", message: 'Request not found' });
         }
-
+        
         const message = `You have a study buddy request accepted ${acceptedRequest?.receiver?.name}.`;
-        // sendPushMessage(acceptedRequest?.sender?._id, message);
-        sendExpoPushMessage(acceptedRequest?.sender?._id, message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT, acceptedRequest)
+        // sendPushMessage(acceptedRequest?.sender?._id.toString(), message);
+        
+        console.log("MESSAGE_REQUEST-sender", acceptedRequest.sender._id.toString());
+        console.log("MESSAGE_REQUEST-receiver", acceptedRequest.receiver._id.toString());
+        
+        await addReceiver(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString());
+        await addReceiver(acceptedRequest.receiver._id.toString(),acceptedRequest.sender._id.toString());
+        sendExpoPushMessage(acceptedRequest?.sender?._id.toString(), message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT, acceptedRequest)
         res.status(200).json({ status: "success", message: 'Request accepted successfully' });
     } catch (error) {
         console.error('Error accepting request:', error);
