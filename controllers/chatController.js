@@ -91,7 +91,7 @@ const acceptRequest = async (req, res) => {
             return res.status(404).json({ status: "error", message: 'Request not found' });
         }
         
-        const message = `You have a study buddy request accepted ${acceptedRequest?.receiver?.name}.`;
+        const message = `Your study buddy chat request is accepted by ${acceptedRequest?.receiver?.name}.`;
         // sendPushMessage(acceptedRequest?.sender?._id.toString(), message);
         
         console.log("MESSAGE_REQUEST-sender", acceptedRequest.sender._id.toString());
