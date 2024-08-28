@@ -29,8 +29,7 @@ const findChatHeads = async (senderId) => {
         $or: [
           { sender: new mongoose.Types.ObjectId(senderId) },
           { receiver: new mongoose.Types.ObjectId(senderId) }
-        ],
-        status: { $ne: CHAT_STATUS_SEEN }
+        ]
       }
     },
     {
