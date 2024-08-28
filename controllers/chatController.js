@@ -5,7 +5,7 @@ const userModel = require('../models/userModel');
 const { getBuddyChatHistory } = require('../services/studyBuddyChatServices');
 const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
-const { addReceiver } = require('../routes/socketIO');
+const { addReceiver, pubClient } = require('../routes/socketIO');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -151,7 +151,10 @@ const getHistoryStudyBuddyChat = async (req, res) => {
         const skip = (page - 1) * limit;
         const payload = { userId, skip, limit, page, receiverId };
 
-        const response = await getBuddyChatHistory(payload);
+        const userActiveSocketsKey = `activeUsers:${userId}`;
+        let isSenderOnline = false;
+        isSenderOnline = await pubClient.sIsMember(userActiveSocketsKey, userId);
+        const response = await getBuddyChatHistory(payload,isSenderOnline);
 
         res.json({ response });
 

@@ -110,6 +110,34 @@ function transformChatMsgs(input, isSenderOnline) {
     }
 }
 
+function transformChatMsgsHistory(input, isSenderOnline) {
+    const messagesList =  input.map(item => ({
+        text: item.message,
+        createdAt: item.timestamp,
+        image: item.image,
+        status: item.status,
+        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED,
+        received: item.status === CHAT_STATUS_RECEIVED,
+        pending: false,
+        receiver: {
+            _id: item.receiver._id,
+            name: item.receiver.name,
+            avatar: item.receiver.avatar_id || null
+        },
+        user: {
+            online: isSenderOnline,
+            _id: item.sender._id,
+            name: item.sender.name,
+            avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
+        },
+        _id: item._id
+    }));
+    return {
+         messages: messagesList,
+         online:  isSenderOnline
+    }
+}
+
 // Example usage
 // const input = [
 //     {
@@ -148,7 +176,7 @@ function transformChatMsgs(input, isSenderOnline) {
 
 // console.log(transformChatMsgs(input));
 
-module.exports = { transformMsgInput, transformSingleAiChatRes, transformChatMsgs };
+module.exports = { transformMsgInput, transformSingleAiChatRes, transformChatMsgs, transformChatMsgsHistory };
 
 // // Example usage
 // const input = [

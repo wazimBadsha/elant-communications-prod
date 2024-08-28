@@ -57,27 +57,6 @@ const addReceiver = async (senderId, receiverId) => {
 (async () => {
     require('./gptSocket');
     io.on('connection', (socket) => {
-        // Handle user joining the chat
-        // socket.on('join', async (senderId) => {
-        //     try {
-        //         const userActiveSocketsKey = `activeUsers:${senderId}`;
-        //         const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
-        //         if (existingSockets.length > 0) {
-        //             await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
-        //         }
-        //         await pubClient.sAdd(userActiveSocketsKey, socket.id);
-        //         socket.join(senderId);
-
-        //         let receiverIds = await getReceivers(senderId);
-        //         if (Array.isArray(receiverIds) && receiverIds.length > 0) {
-        //             receiverIds.forEach(receiverId => {
-        //                 io.to(receiverId).emit('user online', senderId);
-        //             });
-        //         }
-        //     } catch (error) {
-        //         console.error('routes/socketIO.js-Error handling join event:', error);
-        //     }
-        // });
 
         socket.on('join', async (senderId) => {
             try {
@@ -104,32 +83,6 @@ const addReceiver = async (senderId, receiverId) => {
                 console.error('Error handling join event:', error);
             }
         });
-
-        // // Handle user disconnecting from the chat
-        // socket.on('disconnect', async () => {
-        //     try {
-        //         const userSocketsKeyPattern = 'activeUsers:*';
-        //         const keys = await pubClient.keys(userSocketsKeyPattern);
-
-        //         for (const key of keys) {
-        //             const activeSockets = await pubClient.sMembers(key);
-        //             if (activeSockets.includes(socket.id)) {
-        //                 await pubClient.sRem(key, socket.id);
-        //                 const senderId = key.split(':')[1];
-        //                 const receiverIds = await getReceivers(senderId);
-
-        //                 if (Array.isArray(receiverIds) && receiverIds.length > 0) {
-        //                     receiverIds.forEach(receiverId => {
-        //                         io.to(receiverId).emit('user offline', senderId);
-        //                     });
-        //                 }
-        //                 break;
-        //             }
-        //         }
-        //     } catch (error) {
-        //         console.error('routes/socketIO.js-Error handling disconnect event:', error);
-        //     }
-        // });
 
         socket.on('disconnect', async () => {
             try {
@@ -368,4 +321,4 @@ const addReceiver = async (senderId, receiverId) => {
 
 })();
 
-module.exports = { io, addReceiver, getReceivers };
+module.exports = { io, addReceiver, getReceivers, pubClient };
