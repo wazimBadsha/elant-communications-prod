@@ -86,13 +86,16 @@ const findChatHeads = async (senderId) => {
 
 const updateDeliveredStatus = async (messageIds) => {
   try {
+    // Convert string IDs to ObjectId
+    const objectIdArray = messageIds.map(id => new mongoose.Types.ObjectId(id));
+
     await ChatModel.updateMany(
-      { _id: { $in: messageIds } },
+      { _id: { $in: objectIdArray } },
       { $set: { status: CHAT_STATUS_SEEN } }
     );
-    console.log(`repositories/aiChatRepository.js-Messages marked as seen successfully. messageIds: ${messageIds}`);
+    console.log(`repositories/aiChatRepository.js - Messages marked as seen successfully. messageIds: ${messageIds}`);
   } catch (error) {
-    console.error('repositories/aiChatRepository.js-Error updating message status:', error);
+    console.error('repositories/aiChatRepository.js - Error updating message status:', error);
   }
 };
 
