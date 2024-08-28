@@ -132,16 +132,18 @@
         // Configuration for the two chat windows
         const config = {
             1: {
-                socket: io('http://e4e-l6g-e3t-c12s-p2d-1403015546.ap-south-1.elb.amazonaws.com'),
-                senderId: '6692424309e33f7ef062f39c',
-                receiverId: '6694c2b84f004062cbd00b5f',
+                socket: io('http://192.168.29.222:3000'),
+                //socket: io('http://e4e-l6g-e3t-c12s-p2d-1403015546.ap-south-1.elb.amazonaws.com'),
+                senderId: '66cdaf1711cd0dda6f5c92ca',
+                receiverId: '66cdaffc11cd0dda6f5c92cb',
                 chatMessagesId: 'chatMessages1',
                 messageInputId: 'messageInput1'
             },
             2: {
-                socket: io('http://e4e-l6g-e3t-c12s-p2d-1403015546.ap-south-1.elb.amazonaws.com'),
-                senderId: '6694c2b84f004062cbd00b5f',
-                receiverId: '6692424309e33f7ef062f39c',
+                //socket: io('http://e4e-l6g-e3t-c12s-p2d-1403015546.ap-south-1.elb.amazonaws.com'),
+                socket: io('http://192.168.29.222:3000'),
+                senderId: '66cdaffc11cd0dda6f5c92cb',
+                receiverId: '66cdaf1711cd0dda6f5c92ca',
                 chatMessagesId: 'chatMessages2',
                 messageInputId: 'messageInput2'
             }
@@ -157,8 +159,8 @@
             });
 
             socket.on('new message', (message) => {
-                console.log("NEW MESSAGE",message)
-                appendMessage(chatMessagesId, message?.message, false);
+                console.log("NEW MESSAGE", message)
+                appendMessage(chatMessagesId,message, false);
             });
 
             socket.on('user typing', ({ senderId }) => {
@@ -169,9 +171,19 @@
                 console.log(`User ${senderId} stopped typing.`);
             });
 
-            socket.on('messages', (messages) => {
-                console.log(messages)
-                messages.forEach(msg => {
+            socket.on('user online', (senderId) => {
+                // Update UI to show user online status
+                console.log(`User ${senderId} is online.`);
+            });
+
+            socket.on('user offline', (senderId) => {
+                // Update UI to show user offline status
+                console.log(`User ${senderId} is offline.`);
+            });
+
+            socket.on('messages', (data) => {
+                console.log(data)
+                data.messages.forEach(msg => {
                     appendMessage(chatMessagesId, msg, true);
                 });
             });
@@ -200,10 +212,10 @@
         });
 
         function sendMessage(chatWindow) {
-            console.log("chatWindow-sendMessage",chatWindow)
+            console.log("chatWindow-sendMessage", chatWindow)
             const { socket, senderId, receiverId, messageInputId } = config[chatWindow];
             const message = document.getElementById(messageInputId).value.trim();
-            console.log("message-sendMessage",message)
+            console.log("message-sendMessage", message)
             if (message !== '') {
                 socket.emit('send message', { senderId, receiverId, message });
 
@@ -213,21 +225,22 @@
 
         function appendMessage(chatMessagesId, message, isHistory) {
             try {
+                console.log("REACHEDDD",message)
                 const chatMessages = document.getElementById(chatMessagesId);
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('message');
 
                 // Check if the message is from the sender or receiver
-                if (isHistory && message.user._id === config[chatMessagesId.split('Messages')[1]].senderId) {
+                if (isHistory &&  isHistory == true && message.user._id === config[chatMessagesId.split('Messages')[1]].senderId) {
                     messageDiv.classList.add('senderMessage');
-                    messageDiv.textContent = message.message || "Message content failed";
-                } else if (isHistory) {
-                    messageDiv.textContent = message.message || "Message content failed";
+                    messageDiv.textContent = message.text || "Message content failed";
+                } else if (isHistory &&  isHistory == true) {
+                    messageDiv.textContent = message.text || "Message content failed";
                     messageDiv.classList.add('receiverMessage');
                 }
-                console.log("REACHEDDD")
+  
                 const messageSenderDiv = document.createElement('div');
-                if (isHistory == true) {
+                if (isHistory === true) {
                     messageSenderDiv.classList.add('sender');
                     // Get local time and date format
                     const date = new Date(message.timestamp);
@@ -237,11 +250,11 @@
                     messageDiv.appendChild(messageSenderDiv);
                     chatMessages.appendChild(messageDiv);
                 } else {
-                  
+
                     messageSenderDiv.classList.add('sender');
                     messageSenderDiv.textContent = "UNKNOWN";
                     messageDiv.classList.add('senderMessage');
-                    messageDiv.textContent = message.message || "Message content failed";
+                    messageDiv.textContent = message.message.text || "Message content failed";
                     messageDiv.appendChild(messageSenderDiv);
                     chatMessages.appendChild(messageDiv);
                 }
