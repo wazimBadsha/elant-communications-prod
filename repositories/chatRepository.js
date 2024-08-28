@@ -84,16 +84,25 @@ const findChatHeads = async (senderId) => {
   ]);
 };
 
-const updateDeliveredStatus = async (messageIds) => {
+const updateDeliveredStatus = async (messageIds = []) => {
   try {
     // Convert string IDs to ObjectId
-    const objectIdArray = messageIds.map(id => new mongoose.Types.ObjectId(id));
+    if (messageIds && messageIds.length > 0) {
+      console.log("STATUS_CHANGE_TOBE----->",messageIds)
+      const objectIdArray = messageIds.map(id => new mongoose.Types.ObjectId(id));
+      console.log("STATUS_CHANGE_TOBE-objectIdArray----->",objectIdArray)
+      await ChatModel.updateMany(
+        { _id: { $in: objectIdArray } },
+        { $set: { status: CHAT_STATUS_SEEN } }
+      );
+      return;
+      console.log(`repositories/aiChatRepository.js - Messages marked as seen successfully. messageIds: ${messageIds}`);
 
-    await ChatModel.updateMany(
-      { _id: { $in: objectIdArray } },
-      { $set: { status: CHAT_STATUS_SEEN } }
-    );
-    console.log(`repositories/aiChatRepository.js - Messages marked as seen successfully. messageIds: ${messageIds}`);
+    } else {
+      return;
+    }
+
+
   } catch (error) {
     console.error('repositories/aiChatRepository.js - Error updating message status:', error);
   }

@@ -354,7 +354,7 @@ const addReceiver = async (senderId, receiverId) => {
             }
         });
         // Handle message delivered status
-        socket.on('delivered', async ({ messageIds }) => {
+        socket.on('delivered', async (messageIds) => {
             try {
                 const updateStatusRes = await chatRepository.updateDeliveredStatus(messageIds);
                 //todo how to inform client about chat delivered or not in realtime ?
