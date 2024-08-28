@@ -298,7 +298,7 @@ const addReceiver = async (senderId, receiverId) => {
             try {
                 const messages = await chatRepository.findChatHistory(senderId, receiverId);
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
-                let isSenderOnline = isSenderOnline;
+                let isSenderOnline = false;
                 isSenderOnline = await pubClient.sIsMember(userActiveSocketsKey, senderId);
                 if (isSenderOnline) {
                     io.to(receiverId).emit('user online', senderId);
