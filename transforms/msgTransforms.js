@@ -81,7 +81,7 @@ function transformSingleAiChatRes(input) {
 }
 
 function transformChatMsgs(input, isSenderOnline) {
-    return input.map(item => ({
+    const messagesList =  input.map(item => ({
         text: item.message,
         createdAt: item.timestamp,
         image: item.image,
@@ -102,6 +102,10 @@ function transformChatMsgs(input, isSenderOnline) {
         },
         _id: item._id
     }));
+    return {
+         messages: messagesList,
+         online:  isSenderOnline
+    }
 }
 
 // Example usage
