@@ -57,7 +57,6 @@ const addReceiver = async (senderId, receiverId) => {
 (async () => {
     require('./gptSocket');
     io.on('connection', (socket) => {
-
         socket.on('join', async (senderId) => {
             try {
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
@@ -112,7 +111,7 @@ const addReceiver = async (senderId, receiverId) => {
         });
 
         // Handle sending messages
-        socket.on('send message', async ({ senderId, receiverId, message, image, parentID }) => {
+        socket.on('send message', async ({ senderId, receiverId, message, image, replyMessage }) => {
             try {
                 if (!message && !image) {
                     throw new Error('Message or image is missing.');
@@ -122,7 +121,7 @@ const addReceiver = async (senderId, receiverId) => {
                     throw new Error('SenderId or receiverId is missing.');
                 }
 
-                const chat = await sendPrivateMessage(senderId, receiverId, message, image);
+                const chat = await sendPrivateMessage(senderId, receiverId, message, image, replyMessage);
                 const blocked = await isUserBlocked(senderId, receiverId);
 
                 if (blocked) {
@@ -134,12 +133,12 @@ const addReceiver = async (senderId, receiverId) => {
                     _id: chat._id,
                     text: chat.message,
                     createdAt: chat.timestamp,
-                    repliedTo: parentID,
+                    repliedTo: chat.repliedTo,
                     status: CHAT_STATUS_SENT,
                     image: chat.image,
                     receiverId: receiverId,
                     senderId: senderId,
-                    replyMessage: chat.replyMessage,
+                    replyMessage: replyMessage,
                     user: {
                         _id: chat?.sender?._id,
                         name: chat?.sender?.name,

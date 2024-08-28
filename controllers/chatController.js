@@ -5,7 +5,8 @@ const userModel = require('../models/userModel');
 const { getBuddyChatHistory } = require('../services/studyBuddyChatServices');
 const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
-const { addReceiver, pubClient } = require('../routes/socketIO');
+const { addReceiver, pubClient, io } = require('../routes/socketIO');
+const { sendPrivateMessage } = require('../utils/chatUtils');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -98,6 +99,27 @@ const acceptRequest = async (req, res) => {
         
         await addReceiver(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString());
         await addReceiver(acceptedRequest.receiver._id.toString(),acceptedRequest.sender._id.toString());
+        
+        const chat = await sendPrivateMessage(acceptedRequest.sender._id.toString(),  acceptedRequest.receiver._id.toString(), message, null, null);
+    
+        const mychat = {
+            _id: chat._id,
+            text: chat.message,
+            createdAt: chat.timestamp,
+            status: CHAT_STATUS_SENT,
+            image: chat.image,
+            receiverId:  acceptedRequest.receiver._id.toString(),
+            senderId: acceptedRequest.sender._id.toString(),
+            replyMessage: chat.replyMessage,
+            system: true,
+            user: {
+                _id: chat?.sender?._id,
+                name: chat?.sender?.name,
+                avatar: chat?.sender?.avatar
+            }
+        };
+
+        io.to([acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString()]).emit('new message', { message: mychat });
         sendExpoPushMessage(acceptedRequest?.sender?._id.toString(), message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT, acceptedRequest)
         res.status(200).json({ status: "success", message: 'Request accepted successfully' });
     } catch (error) {
