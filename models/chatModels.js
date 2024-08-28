@@ -8,6 +8,7 @@ const chatSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now },
     status: { type: String, enum: [CHAT_STATUS_SENT, CHAT_STATUS_RECEIVED, CHAT_STATUS_SEEN], default: CHAT_STATUS_SENT },
     repliedTo: { type: mongoose.Types.ObjectId, ref: 'Chat' },
+    replyMessage: { type: Object, required: false },
     image: { type: String },
 });
 

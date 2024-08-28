@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const s3 = require('../services/awsS3');
 const { CHAT_STATUS_SENT } = require('../constants/constants');
 
-const sendPrivateMessage = async (senderId, receiverId, message, image, parentID) => {
+const sendPrivateMessage = async (senderId, receiverId, message, image) => {
     try {
         let imageLink = null;
 
@@ -30,13 +30,18 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, parentID
                 throw err;
             }
         }
+        let parentId = null;
+        if (message.replyMessage && message.replyMessage != null) {
+            parentId = message.replyMessage._id;
+        }
 
         const chat = new ChatModel({
             sender: senderId,
             receiver: receiverId,
             message: message,
             image: imageLink,
-            repliedTo: parentID,
+            repliedTo: parentId,
+            replyMessage: message.replyMessage,
             status: CHAT_STATUS_SENT,
         });
 

@@ -91,6 +91,7 @@ function transformChatMsgs(input, isSenderOnline) {
         send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED,
         received: item.status === CHAT_STATUS_RECEIVED,
         pending: false,
+        replyMessage: item.replyMessage,
         receiver: {
             _id: item.receiver._id,
             name: item.receiver.name,
@@ -119,6 +120,7 @@ function transformChatMsgsHistory(input, isSenderOnline) {
         send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED,
         received: item.status === CHAT_STATUS_RECEIVED,
         pending: false,
+        replyMessage: item.replyMessage,
         receiver: {
             _id: item.receiver._id,
             name: item.receiver.name,

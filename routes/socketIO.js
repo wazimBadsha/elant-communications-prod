@@ -122,7 +122,7 @@ const addReceiver = async (senderId, receiverId) => {
                     throw new Error('SenderId or receiverId is missing.');
                 }
 
-                const chat = await sendPrivateMessage(senderId, receiverId, message, image, parentID);
+                const chat = await sendPrivateMessage(senderId, receiverId, message, image);
                 const blocked = await isUserBlocked(senderId, receiverId);
 
                 if (blocked) {
@@ -139,6 +139,7 @@ const addReceiver = async (senderId, receiverId) => {
                     image: chat.image,
                     receiverId: receiverId,
                     senderId: senderId,
+                    replyMessage: chat.replyMessage,
                     user: {
                         _id: chat?.sender?._id,
                         name: chat?.sender?.name,
