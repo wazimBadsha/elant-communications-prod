@@ -108,6 +108,7 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
             repliedTo: parentId,
             replyMessage: replyMessage,
             status: CHAT_STATUS_SENT,
+            system,
         });
 
         await chat.save();

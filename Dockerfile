@@ -1,4 +1,5 @@
-FROM node:16-alpine AS builder
+# Use a Node.js version that supports sharp
+FROM node:20.3.0-bullseye AS builder
 WORKDIR /usr/src/app
 
 # Set environment to development (or production depending on use case)
@@ -9,7 +10,7 @@ COPY package*.json ./
 RUN npm install
 
 # Final stage
-FROM node:16-alpine
+FROM node:20.3.0-bullseye
 
 WORKDIR /usr/src/app
 
@@ -23,7 +24,7 @@ COPY . .
 COPY .env .env
 
 # Install additional tools and nodemon globally
-RUN apk add --no-cache ffmpeg redis && npm install -g nodemon
+RUN apt-get update && apt-get install -y ffmpeg redis && npm install -g nodemon
 
 # Expose the application port
 EXPOSE 3000
