@@ -7,6 +7,8 @@ const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHA
 const { sendExpoPushMessage } = require('../services/notificationService');
 const { addReceiver, pubClient, io } = require('../routes/socketIO');
 const { sendPrivateMessage } = require('../utils/chatUtils');
+const { default: mongoose } = require('mongoose');
+const ChatRequestModel = require('../models/chatRequestModel');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -26,23 +28,114 @@ const listChatRequests = async (req, res) => {
     }
 };
 
+// const searchUser = async (req, res) => {
+//     try {
+//         const { userId } = req.params;
+//         const { user } = req.body;
+
+//         let users = await chatRequestRepository.searchUsers(userId, user);
+
+//         const requests = await chatRequestRepository.findChatRequestsByUserId(userId);
+
+//         requests.forEach(request => {
+//             const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
+//             if (userIndex !== -1) {
+//                 users[userIndex].chatRequestStatus = CHAT_STATUS_RECEIVED;
+//                 requests.forEach(request => {
+//                     const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
+//                     if (userIndex !== -1) {
+//                         users[userIndex].chatRequestStatus = 'received';
+//                         users[userIndex].requestId =  requests[userIndex]._id
+//                     }
+//                 });
+//                 users[userIndex].requestId = requests[userIndex]._id;
+//             }
+//         });
+//         console.log("SEARCH_RESULT=====users", users);
+//         res.json(users);
+
+//     } catch (error) {
+//         console.error('Error searching users:', error);
+//         res.status(500).json({ message: 'Server Error' });
+//     }
+// };
+
 const searchUser = async (req, res) => {
     try {
-        const { userId } = req.params;
         const { user } = req.body;
+        const { userId } = req.params;
+        const limit = 5;
 
-        let users = await chatRequestRepository.searchUsers(userId, user);
+        let users = await userModel.aggregate([
+            {
+                $match: {
+                    $and: [
+                        { _id: { $ne: new mongoose.Types.ObjectId(userId) } },
+                        {
+                            $or: [
+                                { phoneNumber: { $regex: user, $options: 'i' } },
+                                { name: { $regex: user, $options: 'i' } },
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                $lookup: {
+                    from: 'chatrequests',
+                    let: { userId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {
+                                            $or: [
+                                                { $eq: ['$sender', '$$userId'] },
+                                                { $eq: ['$receiver', '$$userId'] }
+                                            ]
+                                        },
+                                        {
+                                            $or: [
+                                                { $eq: ['$sender', new mongoose.Types.ObjectId(userId)] },
+                                                { $eq: ['$receiver', new mongoose.Types.ObjectId(userId)] }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        { $project: { status: 1, _id: 0 } },
+                        { $limit: 1 }
+                    ],
+                    as: 'chatRequestStatus'
+                }
+            },
+            {
+                $limit: limit
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    avatar_id: 1,
+                    chatRequestStatus: { $arrayElemAt: ["$chatRequestStatus.status", 0] }
+                }
+            }
+        ]);
 
-        const requests = await chatRequestRepository.findChatRequestsByUserId(userId);
+        const requests = await ChatRequestModel.find({ receiver: userId, status: 'pending' })
+            .populate('sender', '_id name avatar_id')
+            .select('-__v');
 
         requests.forEach(request => {
             const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
             if (userIndex !== -1) {
-                users[userIndex].chatRequestStatus = CHAT_STATUS_RECEIVED;
-                users[userIndex].requestId = requests[userIndex]._id;
+                users[userIndex].chatRequestStatus = 'received';
+                users[userIndex].requestId =  requests[userIndex]._id
             }
         });
-        console.log("SEARCH_RESULT=====users", users);
+
         res.json(users);
 
     } catch (error) {
@@ -50,6 +143,7 @@ const searchUser = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
 
 const sendRequest = async (req, res) => {
     try {
