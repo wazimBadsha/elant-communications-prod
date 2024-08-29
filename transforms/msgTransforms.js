@@ -1,4 +1,4 @@
-const { CHAT_STATUS_SENT, CHAT_STATUS_RECEIVED } = require("../constants/constants");
+const { CHAT_STATUS_SENT, CHAT_STATUS_RECEIVED, CHAT_STATUS_SEEN } = require("../constants/constants");
 
 function transformMsgInput(input, userInfo) {
     const output = [];
@@ -88,8 +88,8 @@ function transformChatMsgs(input, isSenderOnline) {
         createdAt: item.timestamp,
         image: item.image,
         status: item.status,
-        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED,
-        received: item.status === CHAT_STATUS_RECEIVED,
+        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED ||  item.status === CHAT_STATUS_SEEN,
+        received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
         pending: false,
         replyMessage: item.replyMessage,
         receiver: {
@@ -117,8 +117,8 @@ function transformChatMsgsHistory(input, isSenderOnline) {
         createdAt: item.timestamp,
         image: item.image,
         status: item.status,
-        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED,
-        received: item.status === CHAT_STATUS_RECEIVED,
+        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED ||  item.status === CHAT_STATUS_SEEN,
+        received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
         pending: false,
         replyMessage: item.replyMessage,
         receiver: {
