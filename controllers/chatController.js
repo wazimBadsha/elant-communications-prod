@@ -132,7 +132,9 @@ const searchUser = async (req, res) => {
             const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
             if (userIndex !== -1) {
                 users[userIndex].chatRequestStatus = 'received';
-                users[userIndex].requestId =  requests[userIndex]._id
+                // console.log("REQUEST_ID", requests[userIndex + 1])
+                console.log("REQUEST_ID", request)
+                users[userIndex].requestId =  request._id
             }
         });
 
