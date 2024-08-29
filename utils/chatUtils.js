@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const s3 = require('../services/awsS3');
 const { CHAT_STATUS_SENT } = require('../constants/constants');
 
-const sendPrivateMessage = async (senderId, receiverId, message, image, replyMessage = null) => {
+const sendPrivateMessage = async (senderId, receiverId, message, image, replyMessage = null, system = false) => {
     try {
         let imageLink = null;
 

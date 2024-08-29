@@ -121,7 +121,7 @@ const addReceiver = async (senderId, receiverId) => {
                     throw new Error('SenderId or receiverId is missing.');
                 }
 
-                const chat = await sendPrivateMessage(senderId, receiverId, message, image, replyMessage);
+                const chat = await sendPrivateMessage(senderId, receiverId, message, image, replyMessage, false);
                 const blocked = await isUserBlocked(senderId, receiverId);
 
                 if (blocked) {
@@ -257,7 +257,7 @@ const addReceiver = async (senderId, receiverId) => {
                     io.to(receiverId).emit('user online', senderId);
 
                 }
-                const transformedMsgs = transformChatMsgs(messages,isSenderOnline)
+                const transformedMsgs = transformChatMsgs(messages, isSenderOnline)
                 io.to(senderId).emit('messages', transformedMsgs);
             } catch (error) {
                 console.error('routes/socketIO.js-Error fetching messages:', error);

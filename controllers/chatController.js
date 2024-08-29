@@ -100,7 +100,7 @@ const acceptRequest = async (req, res) => {
         await addReceiver(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString());
         await addReceiver(acceptedRequest.receiver._id.toString(),acceptedRequest.sender._id.toString());
         
-        const chat = await sendPrivateMessage(acceptedRequest.sender._id.toString(),  acceptedRequest.receiver._id.toString(), message, null, null);
+        const chat = await sendPrivateMessage(acceptedRequest.sender._id.toString(),  acceptedRequest.receiver._id.toString(), message, null, null, true);
     
         const mychat = {
             _id: chat._id,
