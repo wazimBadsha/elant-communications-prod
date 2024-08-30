@@ -64,7 +64,7 @@ const searchUser = async (req, res) => {
     try {
         const { user } = req.body;
         const { userId } = req.params;
-        const limit = 5;
+   
 
         let users = await userModel.aggregate([
             {
@@ -110,9 +110,6 @@ const searchUser = async (req, res) => {
                     ],
                     as: 'chatRequestStatus'
                 }
-            },
-            {
-                $limit: limit
             },
             {
                 $project: {
