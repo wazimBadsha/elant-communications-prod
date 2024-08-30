@@ -9,6 +9,7 @@ const { addReceiver, pubClient, io } = require('../routes/socketIO');
 const { sendPrivateMessage } = require('../utils/chatUtils');
 const { default: mongoose } = require('mongoose');
 const ChatRequestModel = require('../models/chatRequestModel');
+const { findBlockBySenderAndReceiver } = require('../repositories/blockUserRepository');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -64,7 +65,7 @@ const searchUser = async (req, res) => {
     try {
         const { user } = req.body;
         const { userId } = req.params;
-   
+
 
         let users = await userModel.aggregate([
             {
@@ -131,7 +132,7 @@ const searchUser = async (req, res) => {
                 users[userIndex].chatRequestStatus = 'received';
                 // console.log("REQUEST_ID", requests[userIndex + 1])
                 console.log("REQUEST_ID", request)
-                users[userIndex].requestId =  request._id
+                users[userIndex].requestId = request._id
             }
         });
 
@@ -162,7 +163,7 @@ const sendRequest = async (req, res) => {
 
         let mUser = await userModel.findOne({ _id: userId });
         let message = `You have a study buddy request from ${mUser?.name}.`;
-        console.log("CHAT_REQUEST",chatRequest)
+        console.log("CHAT_REQUEST", chatRequest)
         sendExpoPushMessage(receiverId.toString(), message, "Chat request", chatRequest._id, NOTI_TYPE_CHAT_REQUEST, chatRequest)
         //sendPushMessage(receiverId, message);
 
@@ -183,25 +184,25 @@ const acceptRequest = async (req, res) => {
         if (!acceptedRequest) {
             return res.status(404).json({ status: "error", message: 'Request not found' });
         }
-        
+
         const message = `Your study buddy chat request is accepted by ${acceptedRequest?.receiver?.name}.`;
         // sendPushMessage(acceptedRequest?.sender?._id.toString(), message);
-        
+
         console.log("MESSAGE_REQUEST-sender", acceptedRequest.sender._id.toString());
         console.log("MESSAGE_REQUEST-receiver", acceptedRequest.receiver._id.toString());
-        
+
         await addReceiver(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString());
-        await addReceiver(acceptedRequest.receiver._id.toString(),acceptedRequest.sender._id.toString());
-        
-        const chat = await sendPrivateMessage(acceptedRequest.sender._id.toString(),  acceptedRequest.receiver._id.toString(), message, null, null, true);
-    
+        await addReceiver(acceptedRequest.receiver._id.toString(), acceptedRequest.sender._id.toString());
+
+        const chat = await sendPrivateMessage(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString(), message, null, null, true);
+
         const mychat = {
             _id: chat._id,
             text: chat.message,
             createdAt: chat.timestamp,
             status: CHAT_STATUS_SENT,
             image: chat.image,
-            receiverId:  acceptedRequest.receiver._id.toString(),
+            receiverId: acceptedRequest.receiver._id.toString(),
             senderId: acceptedRequest.sender._id.toString(),
             replyMessage: chat.replyMessage,
             system: true,
@@ -267,9 +268,18 @@ const getHistoryStudyBuddyChat = async (req, res) => {
         const payload = { userId, skip, limit, page, receiverId };
 
         const userActiveSocketsKey = `activeUsers:${userId}`;
+        //find out online status
         let isSenderOnline = false;
         isSenderOnline = await pubClient.sIsMember(userActiveSocketsKey, userId);
-        const response = await getBuddyChatHistory(payload,isSenderOnline);
+
+        //find out blocked status
+        const doc = await findBlockBySenderAndReceiver(userId, receiverId);
+        let isBlocked = false;
+        if (doc) {
+            isBlocked = true
+        }
+
+        const response = await getBuddyChatHistory(payload, isSenderOnline, isBlocked, doc);
 
         res.json({ response });
 

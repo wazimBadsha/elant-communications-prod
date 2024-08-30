@@ -82,13 +82,13 @@ function transformSingleAiChatRes(input) {
     return output;
 }
 
-function transformChatMsgs(input, isSenderOnline) {
-    const messagesList =  input.map(item => ({
+function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfo) {
+    const messagesList = input.map(item => ({
         text: item.message,
         createdAt: item.timestamp,
         image: item.image,
         status: item.status,
-        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED ||  item.status === CHAT_STATUS_SEEN,
+        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
         received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
         pending: false,
         replyMessage: item.replyMessage,
@@ -106,18 +106,20 @@ function transformChatMsgs(input, isSenderOnline) {
         _id: item._id
     }));
     return {
-         messages: messagesList,
-         online:  isSenderOnline
+        messages: messagesList,
+        online: isSenderOnline,
+        blocked: isBlocked,
+        blockedInfo: blockedInfo
     }
 }
 
 function transformChatMsgsHistory(input, isSenderOnline) {
-    const messagesList =  input.map(item => ({
+    const messagesList = input.map(item => ({
         text: item.message,
         createdAt: item.timestamp,
         image: item.image,
         status: item.status,
-        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED ||  item.status === CHAT_STATUS_SEEN,
+        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
         received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
         pending: false,
         replyMessage: item.replyMessage,
@@ -135,8 +137,8 @@ function transformChatMsgsHistory(input, isSenderOnline) {
         _id: item._id
     }));
     return {
-         messages: messagesList,
-         online:  isSenderOnline
+        messages: messagesList,
+        online: isSenderOnline
     }
 }
 

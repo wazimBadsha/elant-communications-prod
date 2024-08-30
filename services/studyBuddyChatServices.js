@@ -7,7 +7,7 @@ const { CHAT_STATUS_SEEN } = require('../constants/constants');
 const { transformChatMsgs } = require('../transforms/msgTransforms');
 
 
-const getBuddyChatHistory = async (payload,isSenderOnline) => {
+const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedInfo) => {
   try {
     const { userId, receiverId, skip, limit, page } = payload;
 
@@ -33,7 +33,7 @@ const getBuddyChatHistory = async (payload,isSenderOnline) => {
 
     if (msgHistoryInfo && msgHistoryInfo.length > 0) {
       // Pass userInfo to the transform function
-      messageHistory = transformChatMsgs(msgHistoryInfo, isSenderOnline);
+      messageHistory = transformChatMsgs(msgHistoryInfo, isSenderOnline, isBlocked, blockedInfo);
     }
 
     const result = {
