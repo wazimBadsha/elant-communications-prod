@@ -273,13 +273,24 @@ const getHistoryStudyBuddyChat = async (req, res) => {
         isSenderOnline = await pubClient.sIsMember(userActiveSocketsKey, userId);
 
         //find out blocked status
-        const doc = await findBlockBySenderAndReceiver(userId, receiverId);
-        let isBlocked = false;
-        if (doc) {
-            isBlocked = true
-        }
+        const blockedInfoSender = await findBlockBySenderAndReceiver(userId, receiverId);
 
-        const response = await getBuddyChatHistory(payload, isSenderOnline, isBlocked, doc);
+        const blockedInfoReceiver = await findBlockBySenderAndReceiver(receiverId, userId);
+        let isBlocked = false;
+        let isYouBlocked = false;
+        let isReceiverBlocked = false;
+        if (blockedInfoSender) {
+            isBlocked = true
+            isYouBlocked = true
+        }
+        if (blockedInfoReceiver) {
+            isBlocked = true
+            isReceiverBlocked = true
+        }
+        console.log(`BLOCKED INFO OF ${userId} - ${blockedInfoSender}`)
+        console.log(`BLOCKED INFO OF ${receiverId} - ${blockedInfoReceiver}`)
+        
+        const response = await getBuddyChatHistory(payload, isSenderOnline, isBlocked, blockedInfoSender, blockedInfoReceiver, isYouBlocked, isReceiverBlocked);
 
         res.json({ response });
 

@@ -7,14 +7,22 @@ const { CHAT_STATUS_SEEN } = require('../constants/constants');
 const { transformChatMsgs } = require('../transforms/msgTransforms');
 
 
-const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedInfo) => {
+const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked) => {
   try {
     const { userId, receiverId, skip, limit, page } = payload;
-
+    let defaultRes = {
+      messages : [],
+      online: isSenderOnline,
+      blocked: isBlocked,
+      blockedInfo: blockedInfoSender,
+      blockedInfoReceiver,
+      isYouBlocked, 
+      isReceiverBlocked
+    }
     // Fetch user info from users collection
     const userInfo = await userModel.findOne({ _id: new mongoose.Types.ObjectId(userId) }, { _id: 1, name: 1, avatar_id: 1 });
     if (!userInfo) {
-      return { status: "error", message: 'User not found', data: [] };
+      return { status: "error", message: 'User not found' };
     }
 
     const msgHistoryInfo = await ChatModel.find({
@@ -24,16 +32,17 @@ const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedIn
       ],
       status: { $eq: CHAT_STATUS_SEEN }
     }).skip(skip).limit(parseInt(limit)).sort({ timestamp: -1 }).populate('sender', '_id name avatar_id').populate('receiver', '_id name avatar_id');
-
+    
+ 
     if (msgHistoryInfo.length == 0) {
-      return { status: "success", message: 'Study buddy chat history is not found for the given receiver and user ids', data: [] };
+      return { status: "success", message: 'Study buddy chat history is not found for the given receiver and user ids', data: defaultRes  };
     }
 
     let messageHistory = [];
 
     if (msgHistoryInfo && msgHistoryInfo.length > 0) {
       // Pass userInfo to the transform function
-      messageHistory = transformChatMsgs(msgHistoryInfo, isSenderOnline, isBlocked, blockedInfo);
+      messageHistory = transformChatMsgs(msgHistoryInfo, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked);
     }
 
     const result = {

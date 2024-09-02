@@ -82,7 +82,7 @@ function transformSingleAiChatRes(input) {
     return output;
 }
 
-function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfo) {
+function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked) {
     const messagesList = input.map(item => ({
         text: item.message,
         createdAt: item.timestamp,
@@ -109,7 +109,10 @@ function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfo) {
         messages: messagesList,
         online: isSenderOnline,
         blocked: isBlocked,
-        blockedInfo: blockedInfo
+        blockedInfo: blockedInfoSender,
+        blockedInfoReceiver,
+        isYouBlocked, 
+        isReceiverBlocked
     }
 }
 
