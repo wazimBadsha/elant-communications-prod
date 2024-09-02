@@ -109,7 +109,7 @@ function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfoSender, 
         messages: messagesList,
         online: isSenderOnline,
         blocked: isBlocked,
-        blockedInfo: blockedInfoSender,
+        yourBlockedInfo: blockedInfoSender,
         blockedInfoReceiver,
         isYouBlocked, 
         isReceiverBlocked

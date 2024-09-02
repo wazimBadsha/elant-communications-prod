@@ -14,7 +14,7 @@ const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedIn
       messages : [],
       online: isSenderOnline,
       blocked: isBlocked,
-      blockedInfo: blockedInfoSender,
+      yourBlockedInfo: blockedInfoSender,
       blockedInfoReceiver,
       isYouBlocked, 
       isReceiverBlocked
