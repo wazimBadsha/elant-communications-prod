@@ -246,7 +246,9 @@ const ignoreRequest = async (req, res) => {
 const listChatHeads = async (req, res) => {
     try {
         const { userId } = req.params;
-        const chatHeads = await chatRequestRepository.listChatHeads(userId);
+        const chatHeads = await chatRepository.findChatHeads(userId);
+        
+      //  const chatHeads = await chatRequestRepository.listChatHeads(userId);
         const totalRequests = await chatRequestRepository.findChatRequestsByUserIdCount(userId);
         res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: chatHeads, totalRequests: totalRequests });
     } catch (error) {
