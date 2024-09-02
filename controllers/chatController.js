@@ -10,6 +10,7 @@ const { sendPrivateMessage } = require('../utils/chatUtils');
 const { default: mongoose } = require('mongoose');
 const ChatRequestModel = require('../models/chatRequestModel');
 const { findBlockBySenderAndReceiver } = require('../repositories/blockUserRepository');
+const chatRepository = require('../repositories/chatRepository');
 
 const listChatRequests = async (req, res) => {
     try {
@@ -247,10 +248,18 @@ const listChatHeads = async (req, res) => {
     try {
         const { userId } = req.params;
         const chatHeads = await chatRepository.findChatHeads(userId);
-        
-      //  const chatHeads = await chatRequestRepository.listChatHeads(userId);
+
+        //const chatHeads = await chatRequestRepository.listChatHeads(userId);
         const totalRequests = await chatRequestRepository.findChatRequestsByUserIdCount(userId);
-        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: chatHeads, totalRequests: totalRequests });
+        const { page = 1, limit = 10 } = req.query;
+        const skip = (page - 1) * limit;
+        const payload = { userId, skip, limit, page };
+        const requests = await chatRequestRepository.findChatRequestsByUserId(payload);
+        let resData =  {
+            chatHeadList : chatHeads,
+            invitationList: requests
+        }
+        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: resData , totalRequests: totalRequests });
     } catch (error) {
         console.error('Error listing chat heads:', error);
         res.status(500).json({ status: "error", message: 'Server Error' });
