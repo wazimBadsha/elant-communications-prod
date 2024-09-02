@@ -3,7 +3,7 @@ const ChatModel = require('../models/chatModels');
 const BlockUser = require('../models/blockedUser');
 const mongoose = require('mongoose');
 const s3 = require('../services/awsS3');
-const { CHAT_STATUS_SENT } = require('../constants/constants');
+const { CHAT_STATUS_SENT, CHAT_STATUS_SEEN } = require('../constants/constants');
 const sharp = require('sharp');
 
 const sendPrivateMessageOld = async (senderId, receiverId, message, image, replyMessage = null, system = false) => {
@@ -43,7 +43,7 @@ const sendPrivateMessageOld = async (senderId, receiverId, message, image, reply
             image: imageLink,
             repliedTo: parentId,
             replyMessage: replyMessage,
-            status: CHAT_STATUS_SENT,
+            status: system === true ? CHAT_STATUS_SEEN : CHAT_STATUS_SENT,
             system: system
         });
 
@@ -108,7 +108,7 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
             image: imageLink,
             repliedTo: parentId,
             replyMessage: replyMessage,
-            status: CHAT_STATUS_SENT,
+            status: system === true ? CHAT_STATUS_SEEN : CHAT_STATUS_SENT,
             system: system,
         });
 
