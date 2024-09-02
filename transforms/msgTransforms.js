@@ -82,68 +82,163 @@ function transformSingleAiChatRes(input) {
     return output;
 }
 
-function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked) {
-    const messagesList = input.map(item => ({
-        text: item.message,
-        createdAt: item.timestamp,
-        image: item.image,
-        status: item.status,
-        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
-        received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
-        pending: false,
-        replyMessage: item.replyMessage,
-        receiver: {
-            _id: item.receiver._id,
-            name: item.receiver.name,
-            avatar: item.receiver.avatar_id || null
-        },
-        user: {
-            online: isSenderOnline,
-            _id: item.sender._id,
-            name: item.sender.name,
-            avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
-        },
-        _id: item._id
-    }));
+function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfoSender, blockedInfoReceiver, isYouBlocked, isReceiverBlocked) {
+    const messagesList = input.map(item => {
+        if (item.system) {
+            // If it's a system message, only return the essential fields
+            return {
+                _id: item._id,
+                text: item.message,
+                createdAt: item.timestamp,
+                system: item.system
+            };
+        }
+
+        // For non-system messages, return all fields
+        return {
+            text: item.message,
+            createdAt: item.timestamp,
+            image: item.image,
+            status: item.status,
+            send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+            received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+            pending: false,
+            replyMessage: item.replyMessage,
+            system: item.system,
+            receiver: {
+                _id: item.receiver._id,
+                name: item.receiver.name,
+                avatar: item.receiver.avatar_id || null
+            },
+            user: {
+                online: isSenderOnline,
+                _id: item.sender._id,
+                name: item.sender.name,
+                avatar: item.sender.avatar_id || null
+            },
+            _id: item._id
+        };
+    });
+
     return {
         messages: messagesList,
         online: isSenderOnline,
         blocked: isBlocked,
         yourBlockedInfo: blockedInfoSender,
         blockedInfoReceiver,
-        isYouBlocked, 
+        isYouBlocked,
         isReceiverBlocked
-    }
+    };
 }
 
 function transformChatMsgsHistory(input, isSenderOnline) {
-    const messagesList = input.map(item => ({
-        text: item.message,
-        createdAt: item.timestamp,
-        image: item.image,
-        status: item.status,
-        send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
-        received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
-        pending: false,
-        replyMessage: item.replyMessage,
-        receiver: {
-            _id: item.receiver._id,
-            name: item.receiver.name,
-            avatar: item.receiver.avatar_id || null
-        },
-        user: {
-            online: isSenderOnline,
-            _id: item.sender._id,
-            name: item.sender.name,
-            avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
-        },
-        _id: item._id
-    }));
+    const messagesList = input.map(item => {
+        if (item.system) {
+            // If it's a system message, only return the essential fields
+            return {
+                _id: item._id,
+                text: item.message,
+                createdAt: item.timestamp,
+                system: item.system
+            };
+        }
+
+        // For non-system messages, return all fields
+        return {
+            text: item.message,
+            createdAt: item.timestamp,
+            image: item.image,
+            status: item.status,
+            send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+            received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+            pending: false,
+            replyMessage: item.replyMessage,
+            system: item.system,
+            receiver: {
+                _id: item.receiver._id,
+                name: item.receiver.name,
+                avatar: item.receiver.avatar_id || null
+            },
+            user: {
+                online: isSenderOnline,
+                _id: item.sender._id,
+                name: item.sender.name,
+                avatar: item.sender.avatar_id || null
+            },
+            _id: item._id
+        };
+    });
+
     return {
         messages: messagesList,
         online: isSenderOnline
-    }
+    };
 }
+
+// function transformChatMsgs(input, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked) {
+//     const messagesList = input.map(item => ({
+//         text: item.message,
+//         createdAt: item.timestamp,
+//         image: item.image,
+//         status: item.status,
+//         send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+//         received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+//         pending: false,
+//         replyMessage: item.replyMessage,
+//         system: item.system, //todo: here if item.system == true then no need of receiver, user, object. ie, only _id,text,createdAt,system these field are enough. make desired changes 
+//         receiver: {
+//             _id: item.receiver._id,
+//             name: item.receiver.name,
+//             avatar: item.receiver.avatar_id || null
+//         },
+//         user: {
+//             online: isSenderOnline,
+//             _id: item.sender._id,
+//             name: item.sender.name,
+//             avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
+//         },
+//         _id: item._id
+//     }));
+//     return {
+//         messages: messagesList,
+//         online: isSenderOnline,
+//         blocked: isBlocked,
+//         yourBlockedInfo: blockedInfoSender,
+//         blockedInfoReceiver,
+//         isYouBlocked, 
+//         isReceiverBlocked
+//     }
+// }
+
+// function transformChatMsgsHistory(input, isSenderOnline) {
+//     const messagesList = input.map(item => ({
+//         text: item.message,
+//         createdAt: item.timestamp,
+//         image: item.image,
+//         status: item.status,
+//         send: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+//         received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
+//         pending: false,
+//         replyMessage: item.replyMessage,
+//         system: item.system, //todo: here if item.system == true then no need of receiver, user, object. ie, only _id,text,createdAt,system these field are enough. make desired changes 
+//         receiver: {
+//             _id: item.receiver._id,
+//             name: item.receiver.name,
+//             avatar: item.receiver.avatar_id || null
+//         },
+//         user: {
+//             online: isSenderOnline,
+//             _id: item.sender._id,
+//             name: item.sender.name,
+//             avatar: item.sender.avatar_id || null  // Assuming avatar_id might be part of user info
+//         },
+//         _id: item._id
+//     }));
+//     return {
+//         messages: messagesList,
+//         online: isSenderOnline
+//     }
+// }
 
 // Example usage
 // const input = [
