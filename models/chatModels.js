@@ -10,6 +10,7 @@ const chatSchema = new mongoose.Schema({
     repliedTo: { type: mongoose.Types.ObjectId, ref: 'Chat' },
     replyMessage: { type: Object, required: false },
     image: { type: String },
+    system:  { type: Boolean , required: true, default: false},
 });
 
 const ChatModel = mongoose.model('Chat', chatSchema);

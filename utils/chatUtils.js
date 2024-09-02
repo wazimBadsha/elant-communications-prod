@@ -44,6 +44,7 @@ const sendPrivateMessageOld = async (senderId, receiverId, message, image, reply
             repliedTo: parentId,
             replyMessage: replyMessage,
             status: CHAT_STATUS_SENT,
+            system: system
         });
 
         await chat.save();
@@ -108,13 +109,13 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
             repliedTo: parentId,
             replyMessage: replyMessage,
             status: CHAT_STATUS_SENT,
-            system,
+            system: system,
         });
 
         await chat.save();
         await chat.populate([
-            { path: 'sender', select: '_id avatar name' },
-            { path: 'receiver', select: '_id avatar name' }
+            { path: 'sender', select: '_id avatar_id name' },
+            { path: 'receiver', select: '_id avatar_id name' }
         ]);
 
         return chat;

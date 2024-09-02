@@ -205,7 +205,7 @@ const acceptRequest = async (req, res) => {
             receiverId: acceptedRequest.receiver._id.toString(),
             senderId: acceptedRequest.sender._id.toString(),
             replyMessage: chat.replyMessage,
-            system: true,
+            system: chat.system,
             user: {
                 _id: chat?.sender?._id,
                 name: chat?.sender?.name,

@@ -129,7 +129,7 @@ io.on('connection', (socket) => {
             if (!senderId || !receiverId) {
                 throw new Error('routes/socketIO.js- Error: senderId or receiverId is missing.');
             }
-            const chat = await sendPrivateMessage(senderId, receiverId, message, image, parentID);
+            const chat = await sendPrivateMessage(senderId, receiverId, message, image, parentID, false);
 
             const blocked = await isUserBlocked(senderId, receiverId);
 
@@ -147,6 +147,7 @@ io.on('connection', (socket) => {
                 image: chat.image,
                 receiverId: receiverId,
                 senderId: senderId,
+                system: chat.system,
                 user: {
                     _id: chat?.sender?._id,
                     name: chat?.sender?.name,
