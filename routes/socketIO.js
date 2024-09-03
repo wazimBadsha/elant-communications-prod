@@ -59,6 +59,7 @@ const addReceiver = async (senderId, receiverId) => {
     io.on('connection', (socket) => {
         socket.on('join', async (senderId) => {
             try {
+                console.log("SOCKET-JOIN-senderId",senderId)
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
                 const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
                 
@@ -89,6 +90,7 @@ const addReceiver = async (senderId, receiverId) => {
 
         socket.on('disconnect', async (senderId) => {
             try {
+                console.log("SENDER_ID----disconnect",senderId);
                 const userSocketsKeyPattern = 'activeUsers:*';
                 const keys = await pubClient.keys(userSocketsKeyPattern);
                 console.log('allKeys------',keys)
@@ -99,9 +101,8 @@ const addReceiver = async (senderId, receiverId) => {
                     if (activeSockets.includes(senderId)) {
                         console.log(`Active Sockets of  ------${key}`,activeSockets)
                         await pubClient.sRem(key, senderId);
-                        const senderId = key.split(':')[1];
+                      //  const senderId = key.split(':')[1];
                         const receiverIds = await getReceivers(senderId);
-    
                         // Emit user offline event to all receivers
                         if (Array.isArray(receiverIds) && receiverIds.length > 0) {
                             receiverIds.forEach(receiverId => {
