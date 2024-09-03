@@ -255,7 +255,7 @@ const listChatHeads = async (req, res) => {
         const skip = (page - 1) * limit;
         const payload = { userId, skip,  limit, page };
         const requests = await chatRequestRepository.findChatRequestsByUserId(payload);
-        const chatHeadsWithOnlineFlags = await getChatHeadsWithOnlineFlag(chatHeads)
+        const chatHeadsWithOnlineFlags = await getChatHeadsWithOnlineFlag(chatHeads, userId)
 
         const resData =  {
             chatHeadList : chatHeadsWithOnlineFlags,

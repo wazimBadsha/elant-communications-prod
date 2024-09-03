@@ -62,13 +62,26 @@ const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedIn
   }
 };
 
-const getChatHeadsWithOnlineFlag = async (chatHeads) => {
+const getChatHeadsWithOnlineFlag = async (chatHeads, userId) => {
   try {
+    const userActiveSocketsKey = `activeUsers:${userId.toString()}`;
+
+    console.log("userActiveSocketsKey--key",userActiveSocketsKey);
+
+    const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+    console.log(`existingSockets--${userId}`, existingSockets)
+    // if (existingSockets.length > 0) {
+    //     await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
+    // }
+    // await pubClient.sAdd(userActiveSocketsKey, '669f5538636fcc7813add17f');
+
+
+
+    
     // Check if any of the keys exist
     const result = await Promise.all(
       chatHeads.map(async (item) => {
-        const key = `activeUsers:${item._id.toString()}`;
-        let isOnline = await pubClient.sIsMember(key, item._id.toString());
+        let isOnline = await pubClient.sIsMember(userActiveSocketsKey, item._id.toString());
         return {
           ...item,
           isOnline,

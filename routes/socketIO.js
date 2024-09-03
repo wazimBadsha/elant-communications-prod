@@ -61,22 +61,26 @@ const addReceiver = async (senderId, receiverId) => {
             try {
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
                 const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
+                
                 if (existingSockets.length > 0) {
                     await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
                 }
-                await pubClient.sAdd(userActiveSocketsKey, socket.id);
+                
+                await pubClient.sAdd(userActiveSocketsKey, senderId);
                 socket.join(senderId);
-                // await addReceiver(senderId, acceptedRequest.receiver._id.toString());
-                // await addReceiver(acceptedRequest.receiver._id.toString(),senderId);
-
+        
                 // Emit user online event to all receivers
                 let receiverIds = await getReceivers(senderId);
-                console.log(`in join RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+                
+                console.log(`in join RECEIVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds));
+                
                 if (receiverIds && receiverIds.length > 0) {
-                    receiverIds.forEach(receiverId => {
-                        console.log(`pushing USER ${senderId} online in join `)
+                    for (const receiverId of receiverIds) {
+                        const receiversActiveSocketsKey = `activeUsers:${receiverId}`;
+                        await pubClient.sAdd(receiversActiveSocketsKey, senderId);
+                        console.log(`pushing USER ${senderId} online in join`);
                         io.to(receiverId).emit('user online', senderId);
-                    });
+                    }
                 }
             } catch (error) {
                 console.error('Error handling join event:', error);
@@ -87,20 +91,27 @@ const addReceiver = async (senderId, receiverId) => {
             try {
                 const userSocketsKeyPattern = 'activeUsers:*';
                 const keys = await pubClient.keys(userSocketsKeyPattern);
-
+                console.log('allKeys------',keys)
                 for (const key of keys) {
+                    console.log('Processing with ------',key)
                     const activeSockets = await pubClient.sMembers(key);
-                    if (activeSockets.includes(socket.id)) {
-                        await pubClient.sRem(key, socket.id);
+                    console.log(`Active Sockets of  ------${key}`,activeSockets)
+                    if (activeSockets.includes(senderId)) {
+                        console.log(`Active Sockets of  ------${key}`,activeSockets)
+                        await pubClient.sRem(key, senderId);
                         const senderId = key.split(':')[1];
                         const receiverIds = await getReceivers(senderId);
                         console.log(`in disconnect RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
                         // Emit user offline event to all receivers
                         if (Array.isArray(receiverIds) && receiverIds.length > 0) {
-                            receiverIds.forEach(receiverId => {
+                            for (const receiverId of receiverIds) {
+                                // const receiversActiveSocketsKey = `activeUsers:${receiverId}`;
+                        
+                                // await pubClient.sAdd(receiversActiveSocketsKey, senderId);
+                                console.log(`pushing USER ${senderId} online in join`);
                                 console.log(`pushing USER ${senderId} offline in disconnect`)
                                 io.to(receiverId).emit('user offline', senderId);
-                            });
+                            }
                         }
                         break;
                     }
@@ -191,7 +202,7 @@ const addReceiver = async (senderId, receiverId) => {
             if (existingSockets.length > 0) {
                 await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
             }
-            await pubClient.sAdd(userActiveSocketsKey, socket.id);
+            await pubClient.sAdd(userActiveSocketsKey, senderId);
             let receiverIds = await getReceivers(senderId);
             console.log(`in send message RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
             if (Array.isArray(receiverIds) && receiverIds.length > 0) {
@@ -281,7 +292,7 @@ const addReceiver = async (senderId, receiverId) => {
                 if (existingSockets.length > 0) {
                     await pubClient.sRem(userActiveSocketsKey, ...existingSockets);
                 }
-                await pubClient.sAdd(userActiveSocketsKey, socket.id);
+                await pubClient.sAdd(userActiveSocketsKey, senderId);
                 // Emit user online event to all receivers
                 let receiverIds = await getReceivers(senderId);
                 console.log(`in getChatHeads RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
