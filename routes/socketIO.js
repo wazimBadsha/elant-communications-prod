@@ -101,17 +101,12 @@ const addReceiver = async (senderId, receiverId) => {
                         await pubClient.sRem(key, senderId);
                         const senderId = key.split(':')[1];
                         const receiverIds = await getReceivers(senderId);
-                        console.log(`in disconnect RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+    
                         // Emit user offline event to all receivers
                         if (Array.isArray(receiverIds) && receiverIds.length > 0) {
-                            for (const receiverId of receiverIds) {
-                                // const receiversActiveSocketsKey = `activeUsers:${receiverId}`;
-                        
-                                // await pubClient.sAdd(receiversActiveSocketsKey, senderId);
-                                console.log(`pushing USER ${senderId} online in join`);
-                                console.log(`pushing USER ${senderId} offline in disconnect`)
+                            receiverIds.forEach(receiverId => {
                                 io.to(receiverId).emit('user offline', senderId);
-                            }
+                            });
                         }
                         break;
                     }
@@ -120,6 +115,40 @@ const addReceiver = async (senderId, receiverId) => {
                 console.error('routes/socketIO.js- Error handling disconnect event:', error);
             }
         });
+
+        // socket.on('disconnect', async (senderId) => {
+        //     try {
+        //         const userSocketsKeyPattern = 'activeUsers:*';
+        //         const keys = await pubClient.keys(userSocketsKeyPattern);
+        //         console.log('allKeys------',keys)
+        //         for (const key of keys) {
+        //             console.log('Processing with ------',key)
+        //             const activeSockets = await pubClient.sMembers(key);
+        //             console.log(`Active Sockets of  ------${key}`,activeSockets)
+        //             if (activeSockets.includes(senderId)) {
+        //                 console.log(`Active Sockets of  ------${key}`,activeSockets)
+        //                 await pubClient.sRem(key, senderId);
+        //                 const senderId = key.split(':')[1];
+        //                 const receiverIds = await getReceivers(senderId);
+        //                 console.log(`in disconnect RECIEVER_ID_OF SENDER ${senderId} :`, JSON.stringify(receiverIds))
+        //                 // Emit user offline event to all receivers
+        //                 if (Array.isArray(receiverIds) && receiverIds.length > 0) {
+        //                     for (const receiverId of receiverIds) {
+        //                         // const receiversActiveSocketsKey = `activeUsers:${receiverId}`;
+                        
+        //                         // await pubClient.sAdd(receiversActiveSocketsKey, senderId);
+        //                         console.log(`pushing USER ${senderId} online in join`);
+        //                         console.log(`pushing USER ${senderId} offline in disconnect`)
+        //                         io.to(receiverId).emit('user offline', senderId);
+        //                     }
+        //                 }
+        //                 break;
+        //             }
+        //         }
+        //     } catch (error) {
+        //         console.error('routes/socketIO.js- Error handling disconnect event:', error);
+        //     }
+        // });
 
         // Handle sending messages
         socket.on('send message', async ({ senderId, receiverId, message, image, replyMessage }) => {
