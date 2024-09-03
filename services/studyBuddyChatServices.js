@@ -5,18 +5,19 @@ const userModel = require('../models/userModel');
 const ChatModel = require('../models/chatModels');
 const { CHAT_STATUS_SEEN } = require('../constants/constants');
 const { transformChatMsgs } = require('../transforms/msgTransforms');
+const { pubClient } = require('../routes/socketIO');
 
 
-const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked) => {
+const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedInfoSender, blockedInfoReceiver, isYouBlocked, isReceiverBlocked) => {
   try {
     const { userId, receiverId, skip, limit, page } = payload;
     let defaultRes = {
-      messages : [],
+      messages: [],
       online: isSenderOnline,
       blocked: isBlocked,
       yourBlockedInfo: blockedInfoSender,
       blockedInfoReceiver,
-      isYouBlocked, 
+      isYouBlocked,
       isReceiverBlocked
     }
     // Fetch user info from users collection
@@ -32,17 +33,17 @@ const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedIn
       ],
       status: { $eq: CHAT_STATUS_SEEN }
     }).skip(skip).limit(parseInt(limit)).sort({ timestamp: -1 }).populate('sender', '_id name avatar_id').populate('receiver', '_id name avatar_id');
-    
- 
+
+
     if (msgHistoryInfo.length == 0) {
-      return { status: "success", message: 'Study buddy chat history is not found for the given receiver and user ids', data: defaultRes  };
+      return { status: "success", message: 'Study buddy chat history is not found for the given receiver and user ids', data: defaultRes };
     }
 
     let messageHistory = [];
 
     if (msgHistoryInfo && msgHistoryInfo.length > 0) {
       // Pass userInfo to the transform function
-      messageHistory = transformChatMsgs(msgHistoryInfo, isSenderOnline, isBlocked, blockedInfoSender,  blockedInfoReceiver ,isYouBlocked, isReceiverBlocked);
+      messageHistory = transformChatMsgs(msgHistoryInfo, isSenderOnline, isBlocked, blockedInfoSender, blockedInfoReceiver, isYouBlocked, isReceiverBlocked);
     }
 
     const result = {
@@ -61,6 +62,31 @@ const getBuddyChatHistory = async (payload, isSenderOnline, isBlocked, blockedIn
   }
 };
 
+const getChatHeadsWithOnlineFlag = async (chatHeads) => {
+  try {
+    // Check if any of the keys exist
+    const result = await Promise.all(
+      chatHeads.map(async (item) => {
+        const key = `activeUsers:${item._id.toString()}`;
+        let isOnline = await pubClient.sIsMember(key, item._id.toString());
+        return {
+          ...item,
+          isOnline,
+        };
+      })
+    );
+
+    console.log("getChatHeadsWithOnlineFlag----", result);
+    return result;
+  } catch (error) {
+    console.error(
+      "services/studyBuddyChatServices.js - getBuddyChatHistory Error fetching chat heads with online flag:",
+      error
+    );
+    throw error;
+  }
+};
 module.exports = {
-  getBuddyChatHistory
+  getBuddyChatHistory,
+  getChatHeadsWithOnlineFlag
 };

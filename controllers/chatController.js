@@ -2,7 +2,7 @@
 const chatRequestRepository = require('../repositories/chatRequestRepository');
 const userModel = require('../models/userModel');
 // const { sendPushMessage } = require('../services/notifications');
-const { getBuddyChatHistory } = require('../services/studyBuddyChatServices');
+const { getBuddyChatHistory, getChatHeadsWithOnlineFlag } = require('../services/studyBuddyChatServices');
 const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHAT_STATUS_SENT } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
 const { addReceiver, pubClient, io } = require('../routes/socketIO');
@@ -253,10 +253,12 @@ const listChatHeads = async (req, res) => {
         const totalRequests = await chatRequestRepository.findChatRequestsByUserIdCount(userId);
         const { page = 1, limit = 10 } = req.query;
         const skip = (page - 1) * limit;
-        const payload = { userId, skip, limit, page };
+        const payload = { userId, skip,  limit, page };
         const requests = await chatRequestRepository.findChatRequestsByUserId(payload);
-        let resData =  {
-            chatHeadList : chatHeads,
+        const chatHeadsWithOnlineFlags = await getChatHeadsWithOnlineFlag(chatHeads)
+
+        const resData =  {
+            chatHeadList : chatHeadsWithOnlineFlags,
             invitationList: requests
         }
         res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: resData , totalRequests: totalRequests });
