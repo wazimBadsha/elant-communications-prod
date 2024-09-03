@@ -87,7 +87,7 @@ const addReceiver = async (senderId, receiverId) => {
             }
         });
 
-        socket.on('disconnect', async () => {
+        socket.on('disconnect', async (senderId) => {
             try {
                 const userSocketsKeyPattern = 'activeUsers:*';
                 const keys = await pubClient.keys(userSocketsKeyPattern);
