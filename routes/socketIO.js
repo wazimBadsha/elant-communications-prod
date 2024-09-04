@@ -100,7 +100,7 @@ const addReceiver = async (senderId, receiverId) => {
             }
         });
 
-        socket.on('disconnect', async (senderId) => {
+        socket.on('disconnect', async () => {
             try {
                 console.log("SENDER_ID----disconnect");
                 const userSocketsKeyPattern = 'activeUsers:*';
@@ -194,7 +194,7 @@ const addReceiver = async (senderId, receiverId) => {
                 let mlastObjRec = {
                     _id: mychat?.user?._id,
                     name: mychat?.user?.name,
-                    avatar: mychat?.user?.avatar,
+                    avatar_id: mychat?.user?.avatar_id,
                     online: onlineUsers.has(senderId.toString()),
                     lastMessage: {
                         _id: mychat._id,
