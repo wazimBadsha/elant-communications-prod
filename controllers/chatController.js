@@ -210,11 +210,62 @@ const acceptRequest = async (req, res) => {
             user: {
                 _id: chat?.sender?._id,
                 name: chat?.sender?.name,
-                avatar: chat?.sender?.avatar
+                avatar_id: chat?.sender?.avatar_id
             }
         };
 
         io.to([acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString()]).emit('new message', { message: mychat });
+
+
+        const activeUsersKeys = await pubClient.keys('activeUsers:*');
+        const onlineUsers = new Set(activeUsersKeys.map(key => key.split(':')[1]));
+
+        let mlastObjSend = {
+            _id: chat?.receiver?._id,
+            name: chat?.receiver?.name,
+            avatar_id: chat?.receiver?.avatar_id,
+            receiverId: acceptedRequest.receiver._id.toString(),
+            senderId: acceptedRequest.sender._id.toString(),
+            online: onlineUsers.has(chat?.receiver?._id.toString()),
+            lastMessage: {
+                _id: mychat._id,
+                message: mychat.text,
+                image: mychat.image,
+                timestamp: mychat.createdAt,
+                status: CHAT_STATUS_SENT,
+                sender: {
+                    _id: mychat?.user?._id,
+                    name: mychat?.user?.name,
+                    avatar_id: mychat?.user?.avatar_id
+                }
+            }
+        }
+
+        let mlastObjRec = {
+            _id: mychat?.user?._id,
+            name: mychat?.user?.name,
+            avatar_id: mychat?.user?.avatar_id,
+            receiverId: acceptedRequest.receiver._id.toString(),
+            senderId: acceptedRequest.sender._id.toString(),
+            online: onlineUsers.has(mychat?.user?._id.toString()),
+            lastMessage: {
+                _id: mychat._id,
+                message: mychat.text,
+                image: mychat.image,
+                timestamp: mychat.createdAt,
+                status: CHAT_STATUS_SENT,
+                sender: {
+                    _id: mychat?.user?._id,
+                    name: mychat?.user?.name,
+                    avatar_id: mychat?.user?.avatar_id
+                }
+            }
+        }
+
+
+        io.to(acceptedRequest.sender._id.toString()).emit('chat heads', { list: mlastObjSend });
+
+        io.to(acceptedRequest.receiver._id.toString()).emit('chat heads', { list: mlastObjRec });
         sendExpoPushMessage(acceptedRequest?.sender?._id.toString(), message, "Chat Request Accepted", acceptedRequest._id, NOTI_TYPE_CHAT_ACCEPT, acceptedRequest)
         res.status(200).json({ status: "success", message: 'Request accepted successfully' });
     } catch (error) {
@@ -253,15 +304,15 @@ const listChatHeads = async (req, res) => {
         const totalRequests = await chatRequestRepository.findChatRequestsByUserIdCount(userId);
         const { page = 1, limit = 10 } = req.query;
         const skip = (page - 1) * limit;
-        const payload = { userId, skip,  limit, page };
+        const payload = { userId, skip, limit, page };
         const requests = await chatRequestRepository.findChatRequestsByUserId(payload);
         const chatHeadsWithOnlineFlags = await getChatHeadsWithOnlineFlag(chatHeads, userId)
 
-        const resData =  {
-            chatHeadList : chatHeadsWithOnlineFlags,
+        const resData = {
+            chatHeadList: chatHeadsWithOnlineFlags,
             invitationList: requests
         }
-        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: resData , totalRequests: totalRequests });
+        res.status(200).json({ status: "success", message: 'Chat heads fetched successfully', data: resData, totalRequests: totalRequests });
     } catch (error) {
         console.error('Error listing chat heads:', error);
         res.status(500).json({ status: "error", message: 'Server Error' });
@@ -307,7 +358,7 @@ const getHistoryStudyBuddyChat = async (req, res) => {
         }
         console.log(`BLOCKED INFO OF ${userId} - ${blockedInfoSender}`)
         console.log(`BLOCKED INFO OF ${receiverId} - ${blockedInfoReceiver}`)
-        
+
         const response = await getBuddyChatHistory(payload, senderIsOnline, receiverIsOnline, isBlocked, blockedInfoSender, blockedInfoReceiver, isYouBlocked, isReceiverBlocked);
 
         res.json({ response });

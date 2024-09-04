@@ -175,13 +175,15 @@ const addReceiver = async (senderId, receiverId) => {
                     _id: chat.receiver._id,
                     name: chat?.receiver?.name,
                     avatar_id: chat?.receiver?.avatar_id,
+                    receiverId:receiverId.toString(),
+                    senderId: senderId.toString(),
                     online: onlineUsers.has(receiverId.toString()),
                     lastMessage: {
                         _id: mychat._id,
                         message: mychat.text,
                         image: mychat.image,
                         timestamp: mychat.createdAt,
-                        status: 'sent',
+                        status: CHAT_STATUS_SENT,
                         sender: {
                             _id: mychat?.user?._id,
                             name: mychat?.user?.name,
@@ -190,18 +192,19 @@ const addReceiver = async (senderId, receiverId) => {
                     }
                 }
 
-
                 let mlastObjRec = {
                     _id: mychat?.user?._id,
                     name: mychat?.user?.name,
                     avatar_id: mychat?.user?.avatar_id,
+                    receiverId:receiverId.toString(),
+                    senderId: senderId.toString(),
                     online: onlineUsers.has(senderId.toString()),
                     lastMessage: {
                         _id: mychat._id,
                         message: mychat.text,
                         image: mychat.image,
                         timestamp: mychat.createdAt,
-                        status: 'sent',
+                        status: CHAT_STATUS_SENT,
                         sender: {
                             _id: mychat?.user?._id,
                             name: mychat?.user?.name,
@@ -337,7 +340,7 @@ const addReceiver = async (senderId, receiverId) => {
                 const chatHeads = await chatRepository.findChatHeads(senderId);
                 const activeUsersKeys = await pubClient.keys('activeUsers:*');
                 const onlineUsers = new Set(activeUsersKeys.map(key => key.split(':')[1]));
-        
+
                 const [blocksByMe, blocksByThem] = await Promise.all([
                     BlockUser.find({ sender: senderId }, 'receiver -_id').lean(),
                     BlockUser.find({ receiver: senderId }, 'sender -_id').lean(),
@@ -345,7 +348,7 @@ const addReceiver = async (senderId, receiverId) => {
 
                 const blockedByMe = new Set(blocksByMe.map(block => block.receiver.toString()));
                 const blockedByThem = new Set(blocksByThem.map(block => block.sender.toString()));
-    
+
                 let myChatHeads = await Promise.all(chatHeads.map(async chat => {
                     chat.online = onlineUsers.has(chat._id.toString());
                     chat.blockedByYou = blockedByMe.has(chat._id.toString());
@@ -354,7 +357,7 @@ const addReceiver = async (senderId, receiverId) => {
                 }));
                 io.to(senderId).emit('chat heads', { list: myChatHeads });
 
-        
+
             } catch (error) {
                 console.error('routes/socketIO.js-Error fetching chat heads:', error);
             }
