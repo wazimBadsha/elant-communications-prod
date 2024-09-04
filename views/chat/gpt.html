@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket Chat</title>
+    <style>
+        /* Place your CSS here */
+        .chat-container {
+            /* Your existing styles */
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .input-container {
+            /* Your existing styles */
+            margin-top: 20px;
+        }
+
+        .message {
+            /* Your existing styles */
+            padding: 5px 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: #f1f1f1;
+        }
+
+        .sender-message {
+            /* Your existing styles */
+            text-align: right;
+            background-color: #dcf8c6;
+        }
+
+        .receiver-message {
+            /* Your existing styles */
+            text-align: left;
+        }
+
+        .loader {
+            /* Your existing styles */
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 2s linear infinite; /* Safari */
+            animation: spin 2s linear infinite;
+        }
+
+        /* Safari */
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container" id="chatContainer"></div>
+    <div class="input-container">
+        <input type="text" id="messageInput" placeholder="Type your message" />
+        <button id="sendButton">Send</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var socket = io("http://localhost:3000/gpt");
+            var chatContainer = document.getElementById("chatContainer");
+            var messageInput = document.getElementById("messageInput");
+            var sendButton = document.getElementById("sendButton");
+
+            function addMessageToChat(role, message) {
+                var messageDiv = document.createElement("div");
+                messageDiv.classList.add("message", role === "client" ? "sender-message" : "receiver-message");
+                messageDiv.innerHTML = `<p>${message}</p>`;
+                chatContainer.appendChild(messageDiv);
+            }
+
+            socket.on("receiveMessage", function(data) {
+                console.log(JSON.stringify(data.message))
+                addMessageToChat("server", data.message);
+                if(sendButton.innerHTML.includes("loader")) {
+                    sendButton.innerHTML = 'Send';
+                }
+            });
+
+            socket.on("connect", function() {
+                console.log("Connected");
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Disconnected from server');
+            });
+
+            sendButton.addEventListener("click", function() {
+                var message = messageInput.value.trim();
+                if(message) {
+                    socket.emit("sendMessage", { message: message });
+                    addMessageToChat("client", message);
+                    messageInput.value = "";
+                    sendButton.innerHTML = '<div class="loader"></div>';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #chatContainer {
+            display: flex;
+            flex-direction: column;
+            width: 48%;
+            height: 100vh;
+            border: 1px solid #ccc;
+            margin: 1%;
+            padding: 1%;
+        }
+
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #chatInput {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+
+        #messageInput {
+            flex: 1;
+            margin-right: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        #imageInput {
+            margin-right: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 5px;
+        }
+
+        .senderMessage {
+            background-color: #e0f7fa;
+            align-self: flex-start;
+        }
+
+        .receiverMessage {
+            background-color: #ffebee;
+            align-self: flex-end;
+        }
+
+        .sender {
+            font-size: 12px;
+            color: grey;
+            margin-bottom: 2px;
+        }
+
+        .actions {
+            margin-top: 5px;
+        }
+
+        .actions button {
+            margin-right: 5px;
+            padding: 3px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- First Chat Window -->
+    <div id="chatContainer1" class="chatContainer">
+        <h1>Chat - User 1</h1>
+        <div id="chatMessages1" class="chatMessages"></div>
+        <div id="chatInput1" class="chatInput">
+            <input type="file" id="imageInput1" accept="image/*">
+            <input type="text" id="messageInput1" placeholder="Enter message">
+            <button onclick="sendMessage('1')">Send</button>
+        </div>
+        <div id="controls1">
+            <button onclick="getMessages('1')">Get Messages</button>
+            <button onclick="getChatHeads('1')">Get Chat Heads</button>
+            <button onclick="blockUser('1')">Block/Unblock User</button>
+        </div>
+    </div>
+
+    <!-- Second Chat Window -->
+    <div id="chatContainer2" class="chatContainer">
+        <h1>Chat - User 2</h1>
+        <div id="chatMessages2" class="chatMessages"></div>
+        <div id="chatInput2" class="chatInput">
+            <input type="file" id="imageInput2" accept="image/*">
+            <input type="text" id="messageInput2" placeholder="Enter message">
+            <button onclick="sendMessage('2')">Send</button>
+        </div>
+        <div id="controls2">
+            <!-- <button onclick="getMessages('2')">Get Messages</button> -->
+            <button onclick="getChatHeads('2')">Get Chat Heads</button>
+            <button onclick="blockUser('2')">Block/Unblock User</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
+    <script>
+        // Configuration for the two chat windows
+        const config = {
+            1: {
+               // socket: io('http://192.168.29.222:3000'),
+               socket: io('http://localhost:3000'),
+              //  socket: io('http://e4e-l6g-e3t-c12s-p2d-1403015546.ap-south-1.elb.amazonaws.com'),
+                senderId: '669f5538636fcc7813add17f',
+                receiverId: '66952d7b7e640223d91f7b77',
+                chatMessagesId: 'chatMessages1',
+                messageInputId: 'messageInput1'
+            },
+            2: {
+              //  socket: io('http://localhost:3000'),
+               // socket: io('http://e4e-l6g-e3t-c12s-p2d-1403015546.ap-south-1.elb.amazonaws.com'),
+                socket: io('http://localhost:3000'),
+                senderId: '66952d7b7e640223d91f7b77',
+                receiverId: '669f5538636fcc7813add17f',
+                chatMessagesId: 'chatMessages2',
+                messageInputId: 'messageInput2'
+            }
+        };
+
+        // Initialize chat sockets
+        Object.keys(config).forEach(key => {
+            const { socket, senderId, receiverId, chatMessagesId, messageInputId } = config[key];
+
+            socket.on('connect', () => {
+                socket.emit('join', senderId);
+                socket.emit('get messages', { senderId, receiverId });
+            });
+
+            socket.on('new message', (message) => {
+                console.log("NEW MESSAGE", message)
+                appendMessage(chatMessagesId,message, false);
+            });
+
+            socket.on('user typing', ({ senderId }) => {
+                console.log(`User ${senderId} is typing...`);
+            });
+
+            socket.on('user stop typing', ({ senderId }) => {
+                console.log(`User ${senderId} stopped typing.`);
+            });
+
+            socket.on('user online', (senderId) => {
+                // Update UI to show user online status
+                console.log(`User ${senderId} is online.`);
+            });
+
+            socket.on('user offline', (senderId) => {
+                // Update UI to show user offline status
+                console.log(`User ${senderId} is offline.`);
+            });
+
+            socket.on('messages', (data) => {
+                console.log(data)
+                data.list.messages.forEach(msg => {
+                    appendMessage(chatMessagesId, msg, true);
+                });
+            });
+
+            socket.on('chat heads', (chatHeads) => {
+                console.log('Received chat heads:', chatHeads);
+            });
+
+            socket.on('get blocked users', (blockedUsers) => {
+                console.log(`Blocked Users for ${senderId}:`, blockedUsers);
+            });
+
+            socket.on('blockStatusChanged', ({ success, message }) => {
+                console.log(`Block status changed: ${message}`);
+            });
+
+            socket.on('disconnect', () => {
+                console.log(`Disconnected from server - User ${senderId}`);
+            });
+
+            // Typing indicator handling
+            document.getElementById(messageInputId).addEventListener('input', () => {
+                socket.emit('typing', { senderId, receiverId });
+                setTimeout(() => socket.emit('stop typing', { senderId, receiverId }), 2000);
+            });
+        });
+
+        function sendMessage(chatWindow) {
+            console.log("chatWindow-sendMessage", chatWindow)
+            const { socket, senderId, receiverId, messageInputId } = config[chatWindow];
+            const message = document.getElementById(messageInputId).value.trim();
+            console.log("message-sendMessage", message)
+            if (message !== '') {
+                socket.emit('send message', { senderId, receiverId, message });
+
+                document.getElementById(messageInputId).value = '';
+            }
+        }
+
+        function appendMessage(chatMessagesId, message, isHistory) {
+            try {
+                console.log("REACHEDDD",message)
+                const chatMessages = document.getElementById(chatMessagesId);
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message');
+
+                // Check if the message is from the sender or receiver
+                if (isHistory &&  isHistory == true && message.user._id === config[chatMessagesId.split('Messages')[1]].senderId) {
+                    messageDiv.classList.add('senderMessage');
+                    messageDiv.textContent = message.text || "Message content failed";
+                } else if (isHistory &&  isHistory == true) {
+                    messageDiv.textContent = message.text || "Message content failed";
+                    messageDiv.classList.add('receiverMessage');
+                }
+  
+                const messageSenderDiv = document.createElement('div');
+                if (isHistory === true) {
+                    messageSenderDiv.classList.add('sender');
+                    // Get local time and date format
+                    const date = new Date(message.timestamp);
+                    const formattedDate = date.toLocaleString(); // You can customize the format if needed
+
+                    messageSenderDiv.textContent = `${message.user.name || "SENDER NAME"} - ${formattedDate}`;
+                    messageDiv.appendChild(messageSenderDiv);
+                    chatMessages.appendChild(messageDiv);
+                } else {
+
+                    messageSenderDiv.classList.add('sender');
+                    messageSenderDiv.textContent = "UNKNOWN";
+                    messageDiv.classList.add('senderMessage');
+                    messageDiv.textContent = message.message.text || "Message content failed";
+                    messageDiv.appendChild(messageSenderDiv);
+                    chatMessages.appendChild(messageDiv);
+                }
+            } catch (error) {
+                console.error(error)
+            }
+        }
+        function getMessages(chatWindow) {
+            const { socket, senderId, receiverId } = config[chatWindow];
+            socket.emit('get messages', { senderId, receiverId });
+        }
+
+        function getChatHeads(chatWindow) {
+            const { socket, senderId } = config[chatWindow];
+            socket.emit('get chat heads', senderId);
+        }
+
+        function blockUser(chatWindow) {
+            const { socket, senderId, receiverId } = config[chatWindow];
+            socket.emit('block', { senderId, receiverId });
+        }
+    </script>
+</body>
+
+</html>

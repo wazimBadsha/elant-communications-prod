@@ -1,0 +1,73 @@
+name: Advanced deploy to production ecommunicaion
+# on:
+#   pull_request:
+#     types: [closed]
+#     branches: [ prod ]
+on:
+  push:
+    branches: [ prod ]
+    
+jobs:
+  EC2-Deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the latest code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Deploy to EC2
+      - name: Deploy to EC2
+        id: deploy
+        uses: bitovi/github-actions-deploy-docker-to-ec2@v1.0.0
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_default_region: ap-south-1
+          docker_cloudwatch_enable: true
+          docker_cloudwatch_retention_days: 7
+          env_ghs: ${{ secrets.DOT_ENV }}
+          aws_ec2_instance_root_vol_size: 25
+          aws_ec2_instance_root_vol_preserve: true
+          # aws_elb_create: true
+          # aws_elb_app_port: 3000,8080
+          # aws_elb_listen_port: 443,8080
+
+
+
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          AWS_SECRET_S3: ${{ secrets.AWS_SECRET_S3 }}
+          AWS_SECRET_ACCESS_S3: ${{ secrets.AWS_SECRET_ACCESS_S3 }}
+          AWS_S3_BUCKET_NAME: ${{ secrets.AWS_S3_BUCKET_NAME }}
+          EXPRESS_APP_SECRET: ${{ secrets.EXPRESS_APP_SECRET }}
+          PORT: ${{ secrets.PORT }}
+          ASSISTANT_ID: ${{ secrets.ASSISTANT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ONE_SIGNAL_SECRET: ${{ secrets.ONE_SIGNAL_SECRET }}
+          ONE_SIGNAL_APP_ID: ${{ secrets.ONE_SIGNAL_APP_ID }}
+          FIREBASE_TYPE: ${{ secrets.FIREBASE_TYPE }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PRIVATE_KEY_ID: ${{ secrets.FIREBASE_PRIVATE_KEY_ID }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_CLIENT_ID: ${{ secrets.FIREBASE_CLIENT_ID }}
+          FIREBASE_AUTH_URI: ${{ secrets.FIREBASE_AUTH_URI }}
+          FIREBASE_TOKEN_URI: ${{ secrets.FIREBASE_TOKEN_URI }}
+          FIREBASE_AUTH_PROVIDER_CERT_URL: ${{ secrets.FIREBASE_AUTH_PROVIDER_CERT_URL }}
+          FIREBASE_CLIENT_CERT_URL: ${{ secrets.FIREBASE_CLIENT_CERT_URL }}
+          FIREBASE_UNIVERSE_DOMAIN: ${{ secrets.FIREBASE_UNIVERSE_DOMAIN }}
+
+      # # Step 3: SSH into EC2, Install Nginx, and Configure SSL
+      # - name: Configure Nginx and SSL
+      #   uses: appleboy/ssh-action@v0.1.6
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ubuntu
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       sudo apt-get update
+      #       sudo apt-get install -y nginx
+      #       sudo apt-get install -y certbot python3-certbot-nginx
+      #       sudo certbot --nginx --non-interactive --agree-tos --email youremail@example.com --domains yourdomain.com
+      #       sudo systemctl restart nginx

@@ -1,0 +1,164 @@
+import { expect } from 'chai';
+import mongoose from 'mongoose';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
+import ioClient from 'socket.io-client';
+
+describe('Socket.io Tests', function () {
+    this.timeout(10000); // Increase timeout to 10 seconds for async tests
+
+    let io, httpServer, pubClient, subClient;
+
+    before(async function () {
+        console.log('Before hook');
+
+        // Set up MongoDB connection
+        await mongoose.connect('');
+
+        // Set up Redis clients for Socket.io adapter
+        pubClient = createClient();
+        subClient = createClient();
+
+        pubClient.on('error', console.error);
+        subClient.on('error', console.error);
+
+        await Promise.all([pubClient.connect(), subClient.connect()]);
+        io = new Server(createServer());
+        io.adapter(createAdapter(pubClient, subClient));
+        console.log('Redis adapter has been set up successfully.');
+
+        // Set up Socket.io server
+        const port = process.env.TEST_PORT || 4000; // Use a different port to avoid conflict
+        httpServer = createServer();
+        io.attach(httpServer);
+        httpServer.listen(port, () => {
+            console.log(`Test server running on port ${port}`);
+        });
+
+        io.on('connection', (socket) => {
+            console.log('Client connected');
+            socket.on('disconnect', () => {
+                console.log('Client disconnected');
+            });
+        });
+    });
+
+    after(async function () {
+        // Clean up
+        await mongoose.connection.close();
+        await pubClient.quit();
+        await subClient.quit();
+        io.close();
+        httpServer.close();
+    });
+
+    it('should pass a simple test', function () {
+        expect(true).to.be.true;
+    });
+
+    it('should join a user and emit user online event', function (done) {
+        const client = ioClient(`http://localhost:${process.env.TEST_PORT || 4000}`);
+
+        client.on('connect', () => {
+            io.emit('user online', { userId: new mongoose.Types.ObjectId() });
+
+            client.on('user online', (data) => {
+                console.log('Received user online event:', data);
+                expect(data).to.have.property('userId');
+                client.disconnect();
+                done();
+            });
+
+            client.on('connect_error', (err) => {
+                console.error('Connection error:', err);
+                done(err);
+            });
+        });
+    });
+
+    it('should handle sending and receiving messages', function (done) {
+        const client = ioClient(`http://localhost:${process.env.TEST_PORT || 4000}`);
+
+        client.on('connect', () => {
+            const message = { sender: new mongoose.Types.ObjectId(), receiver: new mongoose.Types.ObjectId(), text: 'Hello' };
+
+            io.emit('send message', message);
+            console.log('Message emitted:', message);
+
+            client.on('receive message', (data) => {
+                console.log('Message received:', data);
+                expect(data.text).to.equal('Hello');
+                client.disconnect();
+                done();
+            });
+
+            client.on('connect_error', (err) => {
+                console.error('Connection error:', err);
+                done(err);
+            });
+        });
+    });
+
+    it('should handle blocking users', function (done) {
+        const blockUserId = new mongoose.Types.ObjectId();
+        const client = ioClient(`http://localhost:${process.env.TEST_PORT || 4000}`);
+
+        client.on('connect', () => {
+            io.emit('block user', { blockerId: new mongoose.Types.ObjectId(), blockedId: blockUserId });
+
+            client.on('user blocked', (data) => {
+                console.log('Received user blocked event:', data);
+                expect(data.blockedId).to.equal(blockUserId.toString());
+                client.disconnect();
+                done();
+            });
+
+            client.on('connect_error', (err) => {
+                console.error('Connection error:', err);
+                done(err);
+            });
+        });
+    });
+
+    it('should handle unblocking users', function (done) {
+        const blockUserId = new mongoose.Types.ObjectId();
+        const client = ioClient(`http://localhost:${process.env.TEST_PORT || 4000}`);
+
+        client.on('connect', () => {
+            io.emit('unblock user', { blockerId: new mongoose.Types.ObjectId(), blockedId: blockUserId });
+
+            client.on('user unblocked', (data) => {
+                console.log('Received user unblocked event:', data);
+                expect(data.unblockedId).to.equal(blockUserId.toString());
+                client.disconnect();
+                done();
+            });
+
+            client.on('connect_error', (err) => {
+                console.error('Connection error:', err);
+                done(err);
+            });
+        });
+    });
+
+    it('should handle user disconnect and emit user offline event', function (done) {
+        const client = ioClient(`http://localhost:${process.env.TEST_PORT || 4000}`);
+
+        client.on('connect', () => {
+            client.disconnect();
+
+            io.on('user offline', (data) => {
+                console.log('Received user offline event:', data);
+                expect(data).to.have.property('userId');
+                done();
+            });
+
+            client.on('connect_error', (err) => {
+                console.error('Connection error:', err);
+                done(err);
+            });
+        });
+    });
+});
