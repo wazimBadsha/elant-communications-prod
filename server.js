@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const gptRoutes = require('./routes/gptRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const upload = require('./routes/upload');
 const { io } = require('./routes/socketIO')
 // const {gptio} = require('./routes/gptSocket') 
 const cors = require('cors');
@@ -38,6 +39,7 @@ app.get('/health', (req, res) => {
 
 app.use('/gpt', gptRoutes)
 app.use('/chat', chatRoutes)
+app.use('/upload', upload);
 
 
 // In your server setup (e.g., server.js or app.js)

@@ -84,27 +84,50 @@ const findChatHeads = async (senderId) => {
   ]);
 };
 
+// const updateDeliveredStatus = async (messageIds = []) => {
+//   try {
+//     // Convert string IDs to ObjectId
+//     if (messageIds && messageIds.length > 0) {
+//       console.log("STATUS_CHANGE_TOBE----->",messageIds)
+//       const objectIdArray = messageIds.map(id => new mongoose.Types.ObjectId(id));
+//       console.log("STATUS_CHANGE_TOBE-objectIdArray----->",objectIdArray)
+//       await ChatModel.updateMany(
+//         { _id: { $in: objectIdArray } },
+//         { $set: { status: CHAT_STATUS_SEEN } }
+//       );
+//       console.log(`repositories/aiChatRepository.js - Messages marked as seen successfully. messageIds: ${messageIds}`);
+//       return;
+//     } else {
+//       return;
+//     }
+//   } catch (error) {
+//     console.error('repositories/aiChatRepository.js - Error updating message status:', error);
+//   }
+// };
+
 const updateDeliveredStatus = async (messageIds = []) => {
   try {
     // Convert string IDs to ObjectId
     if (messageIds && messageIds.length > 0) {
-      console.log("STATUS_CHANGE_TOBE----->",messageIds)
       const objectIdArray = messageIds.map(id => new mongoose.Types.ObjectId(id));
-      console.log("STATUS_CHANGE_TOBE-objectIdArray----->",objectIdArray)
+
+      // Update the status of the messages
       await ChatModel.updateMany(
         { _id: { $in: objectIdArray } },
         { $set: { status: CHAT_STATUS_SEEN } }
       );
-      return;
+
+      // Retrieve and return the updated chat objects
+      const updatedMessages = await ChatModel.find({ _id: { $in: objectIdArray } });
+
       console.log(`repositories/aiChatRepository.js - Messages marked as seen successfully. messageIds: ${messageIds}`);
-
+      return updatedMessages;  // Return the full updated chat objects
     } else {
-      return;
+      return [];
     }
-
-
   } catch (error) {
     console.error('repositories/aiChatRepository.js - Error updating message status:', error);
+    throw error;  // Optionally, rethrow the error if needed
   }
 };
 

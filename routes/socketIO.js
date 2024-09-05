@@ -43,11 +43,6 @@ const addReceiver = async (senderId, receiverId) => {
         const key = `senderReceivers:${senderId}`;
         console.log(`routes/socketIO.js-addReceiver Attempting to add receiver ${receiverId} to sender ${senderId}`);
         const isMember = await pubClient.sIsMember(key, receiverId);
-        // const isSenderOnline = await pubClient.sIsMember(`activeUsers:${senderId}`, senderId);
-        // if (isSenderOnline) {
-        //     console.log("addReceiver_ONLINE_STATUS_UPDATE")
-        //     io.to(receiverId).emit('user online', senderId);
-        // }
         if (isMember) {
             console.log(`routes/socketIO.js- addReceiver Receiver ${receiverId} already exists for sender ${senderId}.`);
             return false;
@@ -86,15 +81,6 @@ const addReceiver = async (senderId, receiverId) => {
                         io.to(receiverId).emit('user online', senderId);
                     });
                 }
-                // if (receiverIds && receiverIds.length > 0) {
-
-                //     for (const receiverId of receiverIds) {
-                //         const receiversActiveSocketsKey = `activeUsers:${receiverId}`;
-                //         await pubClient.sAdd(receiversActiveSocketsKey, senderId);
-                //         console.log(`pushing USER ${senderId} online in join`);
-                //         io.to(receiverId).emit('user online', senderId);
-                //     }
-                // }
             } catch (error) {
                 console.error('routes/socketIO.js-Error handling join event:', error);
             }
@@ -102,16 +88,11 @@ const addReceiver = async (senderId, receiverId) => {
 
         socket.on('disconnect', async () => {
             try {
-                console.log("SENDER_ID----disconnect");
                 const userSocketsKeyPattern = 'activeUsers:*';
                 const keys = await pubClient.keys(userSocketsKeyPattern);
-                console.log('allKeys------', keys)
                 for (const key of keys) {
-                    console.log('Processing with ------', key)
                     const activeSockets = await pubClient.sMembers(key);
-                    console.log(`Active Sockets of  ------${key}`, activeSockets)
                     if (activeSockets.includes(socket.id)) {
-                        console.log(`Active Sockets of  ------${key}`, activeSockets)
                         await pubClient.sRem(key, socket.id);
                         const senderId = key.split(':')[1];
                         const receiverIds = await getReceivers(senderId);
@@ -167,7 +148,7 @@ const addReceiver = async (senderId, receiverId) => {
 
                 io.to([senderId, receiverId]).emit('new message', { message: mychat });
                 await addReceiver(senderId, receiverId);
-                //--->
+
                 const activeUsersKeys = await pubClient.keys('activeUsers:*');
                 const onlineUsers = new Set(activeUsersKeys.map(key => key.split(':')[1]));
 
@@ -364,7 +345,7 @@ const addReceiver = async (senderId, receiverId) => {
         });
 
         // Handle getting blocked users
-        socket.on('get blocked users', async (senderId) => {
+        socket.on('get blocked users', async ({senderId}) => {
             try {
                 const blockedUsers = await blockUserRepository.findBlocksBySender(senderId);
                 io.to(senderId).emit('blocked users', blockedUsers);
@@ -373,10 +354,12 @@ const addReceiver = async (senderId, receiverId) => {
             }
         });
         // Handle message delivered status
-        socket.on('delivered', async (messageIds) => {
+        socket.on('delivered', async ({senderId,receiverId, messageIds}) => {  
             try {
                 const updateStatusRes = await chatRepository.updateDeliveredStatus(messageIds);
-                //todo how to inform client about chat delivered or not in realtime ?
+                if(updateStatusRes && updateStatusRes != null){
+                    io.to(senderId).emit('seen', {messageIds});
+                }
                 console.log('routes/socketIO.js-Messages marked as seen successfully.');
             } catch (error) {
                 console.error('routes/socketIO.js-Error updating message status:', error);

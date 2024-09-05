@@ -1,7 +1,6 @@
 // controllers/chatController.js
 const chatRequestRepository = require('../repositories/chatRequestRepository');
 const userModel = require('../models/userModel');
-// const { sendPushMessage } = require('../services/notifications');
 const { getBuddyChatHistory, getChatHeadsWithOnlineFlag } = require('../services/studyBuddyChatServices');
 const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHAT_STATUS_SENT } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
@@ -29,38 +28,6 @@ const listChatRequests = async (req, res) => {
         res.status(500).json({ status: "error", message: 'Server Error' });
     }
 };
-
-// const searchUser = async (req, res) => {
-//     try {
-//         const { userId } = req.params;
-//         const { user } = req.body;
-
-//         let users = await chatRequestRepository.searchUsers(userId, user);
-
-//         const requests = await chatRequestRepository.findChatRequestsByUserId(userId);
-
-//         requests.forEach(request => {
-//             const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
-//             if (userIndex !== -1) {
-//                 users[userIndex].chatRequestStatus = CHAT_STATUS_RECEIVED;
-//                 requests.forEach(request => {
-//                     const userIndex = users.findIndex(user => user._id.equals(request.sender._id));
-//                     if (userIndex !== -1) {
-//                         users[userIndex].chatRequestStatus = 'received';
-//                         users[userIndex].requestId =  requests[userIndex]._id
-//                     }
-//                 });
-//                 users[userIndex].requestId = requests[userIndex]._id;
-//             }
-//         });
-//         console.log("SEARCH_RESULT=====users", users);
-//         res.json(users);
-
-//     } catch (error) {
-//         console.error('Error searching users:', error);
-//         res.status(500).json({ message: 'Server Error' });
-//     }
-// };
 
 const searchUser = async (req, res) => {
     try {
@@ -145,7 +112,6 @@ const searchUser = async (req, res) => {
     }
 };
 
-
 const sendRequest = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -187,10 +153,6 @@ const acceptRequest = async (req, res) => {
         }
 
         const message = `Your study buddy chat request is accepted by ${acceptedRequest?.receiver?.name}.`;
-        // sendPushMessage(acceptedRequest?.sender?._id.toString(), message);
-
-        console.log("MESSAGE_REQUEST-sender", acceptedRequest.sender._id.toString());
-        console.log("MESSAGE_REQUEST-receiver", acceptedRequest.receiver._id.toString());
 
         await addReceiver(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString());
         await addReceiver(acceptedRequest.receiver._id.toString(), acceptedRequest.sender._id.toString());
@@ -294,7 +256,6 @@ const ignoreRequest = async (req, res) => {
     }
 };
 
-
 const listChatHeads = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -356,8 +317,6 @@ const getHistoryStudyBuddyChat = async (req, res) => {
             isBlocked = true
             isReceiverBlocked = true
         }
-        console.log(`BLOCKED INFO OF ${userId} - ${blockedInfoSender}`)
-        console.log(`BLOCKED INFO OF ${receiverId} - ${blockedInfoReceiver}`)
 
         const response = await getBuddyChatHistory(payload, senderIsOnline, receiverIsOnline, isBlocked, blockedInfoSender, blockedInfoReceiver, isYouBlocked, isReceiverBlocked);
 
