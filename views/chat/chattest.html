@@ -158,6 +158,7 @@
             socket.on('connect', () => {
                 socket.emit('join', senderId);
                 socket.emit('get messages', { senderId, receiverId });
+                
             });
 
             socket.on('new message', (message) => {
@@ -185,9 +186,17 @@
 
             socket.on('messages', (data) => {
                 console.log(data)
+                const messageIds = []
                 data.list.messages.forEach(msg => {
+                    messageIds.push(msg._id)
                     appendMessage(chatMessagesId, msg, true);
                 });
+                socket.emit('delivered', { senderId, receiverId, messageIds });
+            });
+
+
+            socket.on('seen', (data) => {
+                console.log('Received seen event:', data);
             });
 
             socket.on('chat heads', (chatHeads) => {
@@ -220,7 +229,6 @@
             console.log("message-sendMessage", message)
             if (message !== '') {
                 socket.emit('send message', { senderId, receiverId, message });
-
                 document.getElementById(messageInputId).value = '';
             }
         }

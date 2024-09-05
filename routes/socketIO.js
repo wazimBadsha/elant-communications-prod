@@ -63,7 +63,6 @@ const addReceiver = async (senderId, receiverId) => {
     io.on('connection', (socket) => {
         socket.on('join', async (senderId) => {
             try {
-                console.log("SOCKET-JOIN-senderId", senderId)
                 const userActiveSocketsKey = `activeUsers:${senderId}`;
                 const existingSockets = await pubClient.sMembers(userActiveSocketsKey);
 
@@ -264,7 +263,6 @@ const addReceiver = async (senderId, receiverId) => {
                 }
 
                 if (result.deletedCount) {
-                    console.log('routes/socketIO.js-Block removed successfully');
                     io.to([senderId, receiverId]).emit('blockStatusChanged', { success: true, message: 'Unblocked', senderId, receiverId });
                 } else {
                     io.to([senderId, receiverId]).emit('blockStatusChanged', { success: true, message: 'Blocked', senderId, receiverId });
