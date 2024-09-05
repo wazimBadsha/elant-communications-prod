@@ -110,7 +110,7 @@ const addReceiver = async (senderId, receiverId) => {
         });
 
         // Handle sending messages
-        socket.on('send message', async ({ senderId, receiverId, message, image, replyMessage }) => {
+        socket.on('send message', async ({ senderId, receiverId, message, image, replyMessage, localId }) => {
             try {
                 if (!message && !image) {
                     throw new Error('Message or image is missing.');
@@ -119,8 +119,8 @@ const addReceiver = async (senderId, receiverId) => {
                 if (!senderId || !receiverId) {
                     throw new Error('SenderId or receiverId is missing.');
                 }
-
-                const chat = await sendPrivateMessage(senderId, receiverId, message, image, replyMessage, false);
+                localId
+                const chat = await sendPrivateMessage(senderId, receiverId, message, image, replyMessage, false, localId);
                 const blocked = await isUserBlocked(senderId, receiverId);
 
                 if (blocked) {
@@ -130,6 +130,7 @@ const addReceiver = async (senderId, receiverId) => {
 
                 const mychat = {
                     _id: chat._id,
+                    localId: chat.localId,
                     text: chat.message,
                     createdAt: chat.timestamp,
                     repliedTo: chat.repliedTo,
@@ -152,6 +153,7 @@ const addReceiver = async (senderId, receiverId) => {
                 const onlineUsers = new Set(activeUsersKeys.map(key => key.split(':')[1]));
 
                 let mlastObjSend = {
+                    _id: chat._id,
                     _id: chat.receiver._id,
                     name: chat?.receiver?.name,
                     avatar_id: chat?.receiver?.avatar_id,
@@ -173,6 +175,7 @@ const addReceiver = async (senderId, receiverId) => {
                 }
 
                 let mlastObjRec = {
+                    _id: chat._id,
                     _id: mychat?.user?._id,
                     name: mychat?.user?.name,
                     avatar_id: mychat?.user?.avatar_id,
@@ -356,7 +359,7 @@ const addReceiver = async (senderId, receiverId) => {
             try {
                 const updateStatusRes = await chatRepository.updateDeliveredStatus(messageIds);
                 if(updateStatusRes && updateStatusRes != null){
-                    io.to(senderId).emit('seen', {messageIds});
+                    io.to(senderId).emit('seen', {messageIds,receiverId,updateStatusRes,senderId});
                 }
                 console.log('routes/socketIO.js-Messages marked as seen successfully.');
             } catch (error) {

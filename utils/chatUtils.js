@@ -63,7 +63,7 @@ const sendPrivateMessageOld = async (senderId, receiverId, message, image, reply
 
 
 
-const sendPrivateMessage = async (senderId, receiverId, message, image, replyMessage = null, system = false) => {
+const sendPrivateMessage = async (senderId, receiverId, message, image, replyMessage = null, system = false, localId) => {
     try {
         let imageLink = null;
 
@@ -87,6 +87,7 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
             };
 
             try {
+                
                 const imageS3Response = await s3.upload(uploadImageParams).promise();
                 imageLink = imageS3Response.Location;
                 console.log('Image uploaded successfully:', imageLink);
@@ -100,8 +101,9 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
         if (replyMessage && replyMessage != null) {
             parentId = replyMessage._id;
         }
-
+    
         const chat = new ChatModel({
+            localId: localId,
             sender: senderId,
             receiver: receiverId,
             message: message,

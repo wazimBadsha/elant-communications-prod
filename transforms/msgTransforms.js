@@ -117,7 +117,8 @@ function transformChatMsgs(input, isSenderOnline,isReceiverOnline, isBlocked, bl
                 name: item.sender.name,
                 avatar: item.sender.avatar_id || null
             },
-            _id: item._id
+            _id: item._id,
+            localId: item.localId,
         };
     });
 

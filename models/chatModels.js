@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { CHAT_STATUS_SENT, CHAT_STATUS_RECEIVED, CHAT_STATUS_SEEN } = require('../constants/constants');
 
 const chatSchema = new mongoose.Schema({
+    localId: { type: String },
     sender: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
     receiver: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
     message: { type: String },

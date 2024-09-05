@@ -34,12 +34,12 @@ export const uploadFileToSignedUrl = (data, file) => {
 
 
 // ui usage sample : 
-// const response = await generateSignedUrl(whiteLogoFileToUpload);
-// console.log("RESPONSE2===", JSON.stringify(response.data.downloadUrl));
-// if (response && response.data && response.data.signedUrl && response.data.signedUrl != null) {
-//   // Upload file into signed URL.
-//   const uploadRes = await uploadFileToSignedUrl(response.data, whiteLogoFileToUpload);
-//   if (uploadRes) {
-//     companyDetails.white_logo = response.data.downloadUrl; // Fixed typo: changed `while_logo` to `white_logo`
-//   }
-// }
+const response = await generateSignedUrl(whiteLogoFileToUpload);
+console.log("RESPONSE2===", JSON.stringify(response.data.downloadUrl));
+if (response && response.data && response.data.signedUrl && response.data.signedUrl != null) {
+  // Upload file into signed URL.
+  const uploadRes = await uploadFileToSignedUrl(response.data, whiteLogoFileToUpload);
+  if (uploadRes) {
+    companyDetails.white_logo = response.data.downloadUrl; // Fixed typo: changed `while_logo` to `white_logo`
+  }
+}
