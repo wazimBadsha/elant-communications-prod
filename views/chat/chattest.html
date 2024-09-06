@@ -192,11 +192,17 @@
                     appendMessage(chatMessagesId, msg, true);
                 });
                 socket.emit('delivered', { senderId, receiverId, messageIds });
+                socket.emit('delete message', { senderId, receiverId, messageIds });
             });
 
 
             socket.on('seen', (data) => {
                 console.log('Received seen event:', data);
+            });
+
+
+            socket.on('deleted', (data) => {
+                console.log('Received deleted event:', data);
             });
 
             socket.on('chat heads', (chatHeads) => {

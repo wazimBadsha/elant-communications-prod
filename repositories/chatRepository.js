@@ -131,8 +131,35 @@ const updateDeliveredStatus = async (messageIds = []) => {
   }
 };
 
+const updateDeleteStatus = async (messageIds = []) => {
+  try {
+    // Convert string IDs to ObjectId
+    if (messageIds && messageIds.length > 0) {
+      const objectIdArray = messageIds.map(id => new mongoose.Types.ObjectId(id));
+
+      // Update the status of the messages
+      await ChatModel.updateMany(
+        { _id: { $in: objectIdArray } },
+        { $set: { isDeleted: true } }
+      );
+
+      // Retrieve and return the updated chat objects
+      const updatedMessages = await ChatModel.find({ _id: { $in: objectIdArray } });
+
+      console.log(`repositories/aiChatRepository.js - Messages marked as deleted successfully. messageIds: ${messageIds}`);
+      return updatedMessages;  // Return the full updated chat objects
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error('repositories/aiChatRepository.js - Error deleting message:', error);
+    throw error; 
+  }
+};
+
 module.exports = {
   findChatHistory,
   findChatHeads,
-  updateDeliveredStatus
+  updateDeliveredStatus,
+  updateDeleteStatus
 };

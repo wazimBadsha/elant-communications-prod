@@ -135,6 +135,7 @@ const addReceiver = async (senderId, receiverId) => {
                     createdAt: chat.timestamp,
                     repliedTo: chat.repliedTo,
                     status: CHAT_STATUS_SENT,
+                    isDeleted: chat.isDeleted,
                     image: chat.image,
                     receiverId: receiverId,
                     senderId: senderId,
@@ -157,8 +158,9 @@ const addReceiver = async (senderId, receiverId) => {
                     _id: chat.receiver._id,
                     name: chat?.receiver?.name,
                     avatar_id: chat?.receiver?.avatar_id,
-                    receiverId:receiverId.toString(),
+                    receiverId: receiverId.toString(),
                     senderId: senderId.toString(),
+                    isDeleted: chat.isDeleted,
                     online: onlineUsers.has(receiverId.toString()),
                     lastMessage: {
                         _id: mychat._id,
@@ -179,8 +181,9 @@ const addReceiver = async (senderId, receiverId) => {
                     _id: mychat?.user?._id,
                     name: mychat?.user?.name,
                     avatar_id: mychat?.user?.avatar_id,
-                    receiverId:receiverId.toString(),
+                    receiverId: receiverId.toString(),
                     senderId: senderId.toString(),
+                    isDeleted: chat.isDeleted,
                     online: onlineUsers.has(senderId.toString()),
                     lastMessage: {
                         _id: mychat._id,
@@ -346,7 +349,7 @@ const addReceiver = async (senderId, receiverId) => {
         });
 
         // Handle getting blocked users
-        socket.on('get blocked users', async ({senderId}) => {
+        socket.on('get blocked users', async ({ senderId }) => {
             try {
                 const blockedUsers = await blockUserRepository.findBlocksBySender(senderId);
                 io.to(senderId).emit('blocked users', blockedUsers);
@@ -355,19 +358,32 @@ const addReceiver = async (senderId, receiverId) => {
             }
         });
         // Handle message delivered status
-        socket.on('delivered', async ({senderId,receiverId, messageIds}) => {  
+        socket.on('delivered', async ({ senderId, receiverId, messageIds }) => {
             try {
                 const updateStatusRes = await chatRepository.updateDeliveredStatus(messageIds);
-                if(updateStatusRes && updateStatusRes != null){
-                    io.to(senderId).emit('seen', {messageIds,receiverId,updateStatusRes,senderId});
+                if (updateStatusRes && updateStatusRes != null) {
+                    io.to(senderId).emit('seen', { messageIds, receiverId, updateStatusRes, senderId });
                 }
                 console.log('routes/socketIO.js-Messages marked as seen successfully.');
             } catch (error) {
                 console.error('routes/socketIO.js-Error updating message status:', error);
             }
         });
-    });
 
+
+        // Handle sending messages
+        socket.on('delete message', async ({ senderId, receiverId, messageIds }) => {
+            try {
+                const updateStatusRes = await chatRepository.updateDeleteStatus(messageIds);
+                if (updateStatusRes && updateStatusRes != null) {
+                    io.to([senderId, receiverId]).emit('deleted', { messageIds, receiverId, updateStatusRes, senderId });
+                }
+                console.log('routes/socketIO.js-Messages marked as seen successfully.');
+            } catch (error) {
+                console.error('routes/socketIO.js-Error handling send message event:', error);
+            }
+        });
+    });
 
 })();
 

@@ -90,7 +90,8 @@ function transformChatMsgs(input, isSenderOnline,isReceiverOnline, isBlocked, bl
                 _id: item._id,
                 text: item.message,
                 createdAt: item.timestamp,
-                system: item.system
+                system: item.system,
+                isDeleted: false,
             };
         }
 
@@ -103,6 +104,7 @@ function transformChatMsgs(input, isSenderOnline,isReceiverOnline, isBlocked, bl
             sent: item.status === CHAT_STATUS_SENT || item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
             received: item.status === CHAT_STATUS_RECEIVED || item.status === CHAT_STATUS_SEEN,
             pending: false,
+            isDeleted: item.isDeleted,
             replyMessage: item.replyMessage,
             system: item.system,
             receiver: {

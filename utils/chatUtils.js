@@ -108,6 +108,7 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
             receiver: receiverId,
             message: message,
             image: imageLink,
+            isDeleted: false,
             repliedTo: parentId,
             replyMessage: replyMessage,
             status: system === true ? CHAT_STATUS_SEEN : CHAT_STATUS_SENT,
