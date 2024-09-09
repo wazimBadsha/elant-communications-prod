@@ -23,6 +23,7 @@ const findBlocksByReceiver = async (receiverId) => {
     return BlockUser.find({ receiver: receiverId }, 'sender -_id').lean();
 };
 
+
 module.exports = {
     findBlockBySenderAndReceiver,
     deleteBlock,

@@ -3,7 +3,6 @@ const { sendPrivateMessage, isUserBlocked } = require('../utils/chatUtils');
 const { createClient } = require("redis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const { io } = require('../utils/socketMain');
-const BlockUser = require('../models/blockedUser');
 
 // Import repository methods
 const chatRepository = require('../repositories/chatRepository');
@@ -110,8 +109,9 @@ const addReceiver = async (senderId, receiverId) => {
         });
 
         // Handle sending messages
-        socket.on('send message', async ({ senderId, receiverId, message, image, replyMessage, localId }) => {
+        socket.on('send message', async (payload) => {
             try {
+                const { senderId, receiverId, message, image, replyMessage, localId } = payload;
                 if (!message && !image) {
                     throw new Error('Message or image is missing.');
                 }
@@ -136,7 +136,7 @@ const addReceiver = async (senderId, receiverId) => {
                     repliedTo: chat.repliedTo,
                     status: CHAT_STATUS_SENT,
                     isDeleted: chat.isDeleted,
-                    system:  chat.system,
+                    system: chat.system,
                     image: chat.image,
                     receiverId: receiverId,
                     senderId: senderId,
@@ -167,7 +167,7 @@ const addReceiver = async (senderId, receiverId) => {
                         message: mychat.text,
                         image: mychat.image,
                         isDeleted: mychat.isDeleted,
-                        system:  mychat.system,
+                        system: mychat.system,
                         timestamp: mychat.createdAt,
                         status: CHAT_STATUS_SENT,
                         sender: {
@@ -191,7 +191,7 @@ const addReceiver = async (senderId, receiverId) => {
                         message: mychat.text,
                         image: mychat.image,
                         isDeleted: mychat.isDeleted,
-                        system:  mychat.system,
+                        system: mychat.system,
                         timestamp: mychat.createdAt,
                         status: CHAT_STATUS_SENT,
                         sender: {
@@ -213,13 +213,17 @@ const addReceiver = async (senderId, receiverId) => {
                 }
 
             } catch (error) {
-                console.error('routes/socketIO.js-Error handling send message event:', error);
+                console.error(`routes/socketIO.js-Error handling send message event: payload is: ${JSON.stringify(payload)}`, error);
             }
         });
 
         // Handle typing indicator
         socket.on('typing', ({ senderId, receiverId }) => {
-            io.to(receiverId).emit('user typing', { senderId });
+            try {
+                io.to(receiverId).emit('user typing', { senderId });
+            } catch (error) {
+                console.log(`routes/socketIO.js-Error msg typing func - senderId ${senderId} receiverId ${receiverId} Error is:`, error);
+            }
         });
 
         // socket.on('user status up', async (senderId) => {
@@ -257,7 +261,11 @@ const addReceiver = async (senderId, receiverId) => {
 
         // Handle stop typing indicator
         socket.on('stop typing', ({ senderId, receiverId }) => {
-            io.to(receiverId).emit('user stop typing', { senderId });
+            try {
+                io.to(receiverId).emit('user stop typing', { senderId });
+            } catch (error) {
+                console.log(`routes/socketIO.js-Error msg stop typing func - senderId ${senderId} receiverId ${receiverId} Error is:`, error);
+            }
         });
 
         // Handle blocking/unblocking users
@@ -329,10 +337,8 @@ const addReceiver = async (senderId, receiverId) => {
                 const activeUsersKeys = await pubClient.keys('activeUsers:*');
                 const onlineUsers = new Set(activeUsersKeys.map(key => key.split(':')[1]));
 
-                const [blocksByMe, blocksByThem] = await Promise.all([
-                    BlockUser.find({ sender: senderId }, 'receiver -_id').lean(),
-                    BlockUser.find({ receiver: senderId }, 'sender -_id').lean(),
-                ]);
+                const blocksByMe = await blockUserRepository.findBlocksBySender(senderId);
+                const blocksByThem = await blockUserRepository.findBlocksByReceiver(senderId);
 
                 const blockedByMe = new Set(blocksByMe.map(block => block.receiver.toString()));
                 const blockedByThem = new Set(blocksByThem.map(block => block.sender.toString()));
@@ -367,9 +373,9 @@ const addReceiver = async (senderId, receiverId) => {
                 if (updateStatusRes && updateStatusRes != null) {
                     io.to(senderId).emit('seen', { messageIds, receiverId, updateStatusRes, senderId });
                 }
-                console.log('routes/socketIO.js-Messages marked as seen successfully.');
+                console.log('routes/socketIO.js-Messages marked as delivered and seen event emited successfully.');
             } catch (error) {
-                console.error('routes/socketIO.js-Error updating message status:', error);
+                console.error('routes/socketIO.js-Error updating message status delivered and seen:', error);
             }
         });
 
@@ -381,9 +387,9 @@ const addReceiver = async (senderId, receiverId) => {
                 if (updateStatusRes && updateStatusRes != null) {
                     io.to([senderId, receiverId]).emit('deleted', { messageIds, receiverId, updateStatusRes, senderId });
                 }
-                console.log('routes/socketIO.js-Messages marked as seen successfully.');
+                console.log('routes/socketIO.js-Messages marked as deleted successfully.');
             } catch (error) {
-                console.error('routes/socketIO.js-Error handling send message event:', error);
+                console.error('routes/socketIO.js-Error handling deleted message event:', error);
             }
         });
     });
