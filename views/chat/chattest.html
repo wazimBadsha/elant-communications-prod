@@ -206,7 +206,8 @@
             });
 
             socket.on('chat heads', (chatHeads) => {
-                console.log('Received chat heads:', chatHeads);
+                console.log('Received chat heads full data:', JSON.stringify(chatHeads));
+                console.log('Received chat heads:', JSON.stringify(chatHeads.list));
             });
 
             socket.on('get blocked users', (blockedUsers) => {

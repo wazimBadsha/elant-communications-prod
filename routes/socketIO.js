@@ -136,6 +136,7 @@ const addReceiver = async (senderId, receiverId) => {
                     repliedTo: chat.repliedTo,
                     status: CHAT_STATUS_SENT,
                     isDeleted: chat.isDeleted,
+                    system:  chat.system,
                     image: chat.image,
                     receiverId: receiverId,
                     senderId: senderId,
@@ -160,12 +161,13 @@ const addReceiver = async (senderId, receiverId) => {
                     avatar_id: chat?.receiver?.avatar_id,
                     receiverId: receiverId.toString(),
                     senderId: senderId.toString(),
-                    isDeleted: chat.isDeleted,
                     online: onlineUsers.has(receiverId.toString()),
                     lastMessage: {
                         _id: mychat._id,
                         message: mychat.text,
                         image: mychat.image,
+                        isDeleted: mychat.isDeleted,
+                        system:  mychat.system,
                         timestamp: mychat.createdAt,
                         status: CHAT_STATUS_SENT,
                         sender: {
@@ -183,12 +185,13 @@ const addReceiver = async (senderId, receiverId) => {
                     avatar_id: mychat?.user?.avatar_id,
                     receiverId: receiverId.toString(),
                     senderId: senderId.toString(),
-                    isDeleted: chat.isDeleted,
                     online: onlineUsers.has(senderId.toString()),
                     lastMessage: {
                         _id: mychat._id,
                         message: mychat.text,
                         image: mychat.image,
+                        isDeleted: mychat.isDeleted,
+                        system:  mychat.system,
                         timestamp: mychat.createdAt,
                         status: CHAT_STATUS_SENT,
                         sender: {

@@ -1,7 +1,6 @@
 // repositories/chatRepository.js
 const mongoose = require('mongoose');
 const ChatModel = require('../models/chatModels');
-const UserModel = require('../models/userModel');  // Import the User model
 const { CHAT_STATUS_SEEN } = require('../constants/constants');
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
@@ -23,65 +22,73 @@ const findChatHistory = async (senderId, receiverId) => {
 };
 
 const findChatHeads = async (senderId) => {
-  return ChatModel.aggregate([
-    {
-      $match: {
-        $or: [
-          { sender: new mongoose.Types.ObjectId(senderId) },
-          { receiver: new mongoose.Types.ObjectId(senderId) }
-        ]
-      }
-    },
-    {
-      $sort: { timestamp: -1 }
-    },
-    {
-      $group: {
-        _id: { $cond: [{ $eq: ["$sender", new mongoose.Types.ObjectId(senderId)] }, "$receiver", "$sender"] },
-        lastMessage: { $first: "$$ROOT" }
-      }
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "_id",
-        foreignField: "_id",
-        as: "user"
-      }
-    },
-    {
-      $unwind: "$user"
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "lastMessage.sender",
-        foreignField: "_id",
-        as: "lastMessage.sender"
-      }
-    },
-    {
-      $unwind: "$lastMessage.sender"
-    },
-    {
-      $project: {
-        _id: "$user._id",
-        name: "$user.name",
-        avatar_id: "$user.avatar_id",
-        receiver_id: "$lastMessage.receiver._id",
-        lastMessage: {
-          _id: "$lastMessage._id",
-          message: "$lastMessage.message",
-          image: "$lastMessage.image",
-          timestamp: "$lastMessage.timestamp",
-          status: "$lastMessage.status",
-          sender: {
-            _id: "$lastMessage.sender._id",
+  try {
+    return ChatModel.aggregate([
+      {
+        $match: {
+          $or: [
+            { sender: new mongoose.Types.ObjectId(senderId) },
+            { receiver: new mongoose.Types.ObjectId(senderId) }
+          ]
+        }
+      },
+      {
+        $sort: { timestamp: -1 }
+      },
+      {
+        $group: {
+          _id: { $cond: [{ $eq: ["$sender", new mongoose.Types.ObjectId(senderId)] }, "$receiver", "$sender"] },
+          lastMessage: { $first: "$$ROOT" }
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user"
+        }
+      },
+      {
+        $unwind: "$user"
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "lastMessage.sender",
+          foreignField: "_id",
+          as: "lastMessage.sender"
+        }
+      },
+      {
+        $unwind: "$lastMessage.sender"
+      },
+      {
+        $project: {
+          _id: "$user._id",
+          name: "$user.name",
+          avatar_id: "$user.avatar_id",
+          receiver_id: "$lastMessage.receiver._id",
+          lastMessageData: "$lastMessage",
+          lastMessage: {
+            _id: "$lastMessage._id",
+            message: "$lastMessage.message",
+            isDeleted: "$lastMessage.isDeleted",
+            system: "$lastMessage.system",
+            image: "$lastMessage.image",
+            timestamp: "$lastMessage.timestamp",
+            status: "$lastMessage.status",
+            sender: {
+              _id: "$lastMessage.sender._id",
+            }
           }
         }
       }
-    }
-  ]);
+    ]);
+  } catch (error) {
+    console.log("repositories/chatRepository.js findChatHeads - Error ", error)
+    throw error;
+  }
 };
 
 // const updateDeliveredStatus = async (messageIds = []) => {
@@ -153,7 +160,7 @@ const updateDeleteStatus = async (messageIds = []) => {
     }
   } catch (error) {
     console.error('repositories/aiChatRepository.js - Error deleting message:', error);
-    throw error; 
+    throw error;
   }
 };
 
