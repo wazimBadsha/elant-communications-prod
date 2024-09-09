@@ -2,7 +2,7 @@
 const chatRequestRepository = require('../repositories/chatRequestRepository');
 const userModel = require('../models/userModel');
 const { getBuddyChatHistory, getChatHeadsWithOnlineFlag } = require('../services/studyBuddyChatServices');
-const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHAT_STATUS_SENT } = require('../constants/constants');
+const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHAT_STATUS_SENT, CHAT_REQUEST_ACCEPT_SYS_MSG } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
 const { addReceiver, pubClient, io } = require('../routes/socketIO');
 const { sendPrivateMessage } = require('../utils/chatUtils');
@@ -152,7 +152,7 @@ const acceptRequest = async (req, res) => {
             return res.status(404).json({ status: "error", message: 'Request not found' });
         }
 
-        const message = `Your study buddy chat request is accepted by ${acceptedRequest?.receiver?.name}.`;
+        const message = CHAT_REQUEST_ACCEPT_SYS_MSG;
 
         await addReceiver(acceptedRequest.sender._id.toString(), acceptedRequest.receiver._id.toString());
         await addReceiver(acceptedRequest.receiver._id.toString(), acceptedRequest.sender._id.toString());
