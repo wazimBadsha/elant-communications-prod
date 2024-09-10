@@ -4,7 +4,7 @@ import { axiosInstance } from "./axiosConfig";
 export const generateSignedUrl = async (file) => {
     try {
         const params = { filePath: file.name };
-        const response = await axiosInstance.post(`/api/upload/generate-signed-url`, params);
+        const response = await axiosInstance.post(`/upload/generate-signed-url`, params);
         console.log("RESPONSE====",JSON.stringify(response.data.data))
         if (response.data  && response.data.data && response.data.data.status && response.data.data.status === "success") {
             return response.data.data;

@@ -1,10 +1,11 @@
 require("dotenv").config();
 const AWS = require("aws-sdk");
-
 // to generate md5 hash for file key
 const md5 = require("md5");
 const path = require("path");
 const _ = require("lodash");
+var mime = require('mime-types')
+
 
 const apiResponse = require("../helpers/apiResponse");
 // const auth = require("../middleware/jwtAuthMiddleware");
@@ -46,11 +47,10 @@ exports.getSignedUrl = [
   async function (req, res) {
     try {
       // to get content type of file
-      const mime = await import('mime');
       const { filePath = null } = req.body;
 
       // Uses node-mime to detect mime-type based on file extension
-      const mimeType = mime.getType(filePath);
+      const mimeType = mime.contentType(filePath);
 
       // Time after which this signed url will expire
       const signedUrlExpireSeconds = process.env.S3_SIGNED_URL_EXPIRY
