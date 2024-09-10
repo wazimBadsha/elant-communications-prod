@@ -2,7 +2,7 @@
 const chatRequestRepository = require('../repositories/chatRequestRepository');
 const userModel = require('../models/userModel');
 const { getBuddyChatHistory, getChatHeadsWithOnlineFlag } = require('../services/studyBuddyChatServices');
-const { CHAT_STATUS_RECEIVED, NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHAT_STATUS_SENT, CHAT_REQUEST_ACCEPT_SYS_MSG } = require('../constants/constants');
+const { NOTI_TYPE_CHAT_REQUEST, NOTI_TYPE_CHAT_ACCEPT, CHAT_STATUS_SENT, CHAT_REQUEST_ACCEPT_SYS_MSG } = require('../constants/constants');
 const { sendExpoPushMessage } = require('../services/notificationService');
 const { addReceiver, pubClient, io } = require('../routes/socketIO');
 const { sendPrivateMessage } = require('../utils/chatUtils');
@@ -130,9 +130,7 @@ const sendRequest = async (req, res) => {
 
         let mUser = await userModel.findOne({ _id: userId });
         let message = `You have a study buddy request from ${mUser?.name}.`;
-        console.log("CHAT_REQUEST", chatRequest)
         sendExpoPushMessage(receiverId.toString(), message, "Chat request", chatRequest._id, NOTI_TYPE_CHAT_REQUEST, chatRequest)
-        //sendPushMessage(receiverId, message);
 
         res.status(200).json({ status: "success", message: 'Request sent successfully' });
     } catch (error) {
@@ -328,8 +326,6 @@ const getHistoryStudyBuddyChat = async (req, res) => {
         return res.status(500).json({ status: 'error', message: error.message });
     }
 };
-
-
 
 module.exports = {
     listChatRequests,

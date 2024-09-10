@@ -56,7 +56,6 @@ const addReceiver = async (senderId, receiverId) => {
     }
 };
 
-
 (async () => {
     require('./gptSocket');
     io.on('connection', (socket) => {
