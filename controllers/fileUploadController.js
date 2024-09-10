@@ -1,17 +1,15 @@
 require("dotenv").config();
 const AWS = require("aws-sdk");
-// to generate md5 hash for file key
 const md5 = require("md5");
 const path = require("path");
-const _ = require("lodash");
-var mime = require('mime-types')
+var mime = require('mime-types');
 const apiResponse = require("../helpers/apiResponse");
 
 AWS.config = new AWS.Config({
   accessKeyId: process.env.AWS_SECRET_S3,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_S3,
-  region: process.env.AWS_REGION_S3, // make sure the region is correctly set
-  signatureVersion: 'v4' // explicitly set the signature version
+  region: process.env.AWS_REGION_S3,
+  signatureVersion: 'v4'
 });
 
 const s3 = new AWS.S3();
@@ -36,6 +34,7 @@ exports.getSignedUrl = async function (req, res) {
       Key: s3ObjectKey,
       Expires: signedUrlExpireSeconds,
       ContentType: mimeType,
+      ACL: 'public-read'  // <-- Add this to make the file publicly readable
     };
 
     const signedUrl = await s3.getSignedUrlPromise('putObject', params);
