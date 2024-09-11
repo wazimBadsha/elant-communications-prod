@@ -1,5 +1,3 @@
-
-
 require("dotenv").config();
 const AWS = require("aws-sdk");
 const md5 = require("md5");
