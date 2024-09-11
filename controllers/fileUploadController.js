@@ -1,15 +1,13 @@
-require("dotenv").config();
 const AWS = require("aws-sdk");
+const mime = require("mime-types");
 const md5 = require("md5");
 const path = require("path");
-var mime = require('mime-types');
 const apiResponse = require("../helpers/apiResponse");
 
-AWS.config = new AWS.Config({
-  accessKeyId: process.env.AWS_SECRET_S3,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_S3,
+// Configure AWS region and signature version
+AWS.config.update({
   region: process.env.AWS_REGION_S3,
-  signatureVersion: 'v4'
+  signatureVersion: 'v4',
 });
 
 const s3 = new AWS.S3();
@@ -17,28 +15,36 @@ const s3 = new AWS.S3();
 exports.getSignedUrl = async function (req, res) {
   try {
     const { filePath = null } = req.body;
+    if (!filePath) {
+      return apiResponse.ErrorResponse(res, "File path is required.");
+    }
+
+    // Detect mime-type based on file extension
     const mimeType = mime.contentType(filePath);
-    const signedUrlExpireSeconds = process.env.S3_SIGNED_URL_EXPIRY
-      ? parseInt(process.env.S3_SIGNED_URL_EXPIRY)
+
+    // Use the expiry time from environment variables or default to 10000 seconds
+    const signedUrlExpireSeconds = process.env.S3_SIGNED_URL_EXPIRY 
+      ? parseInt(process.env.S3_SIGNED_URL_EXPIRY) 
       : 10000;
 
+    // Create a unique file key using md5 hash
     const md5Hash = md5(new Date().getTime());
     const fileExtension = path.extname(filePath);
-    let fileKey = `${md5Hash}${fileExtension}`;
-    let uploadFolder = process.env.AWS_FOLDER_S3;
-    const myBucket = process.env.AWS_S3_BUCKET_NAME;
+    const fileKey = `${md5Hash}${fileExtension}`;
+    const uploadFolder = process.env.AWS_FOLDER_S3;
     const s3ObjectKey = `${uploadFolder}/${fileKey}`;
 
+    // Parameters for the signed URL
     const params = {
-      Bucket: myBucket,
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: s3ObjectKey,
       Expires: signedUrlExpireSeconds,
       ContentType: mimeType,
-      ACL: 'public-read'  // <-- Add this to make the file publicly readable
     };
 
-    const signedUrl = await s3.getSignedUrlPromise('putObject', params);
-    
+    // Generate the signed URL
+    const signedUrl = await s3.getSignedUrlPromise("putObject", params);
+
     apiResponse.successResponseWithData(res, "Signed URL", {
       status: "success",
       data: {
@@ -48,7 +54,6 @@ exports.getSignedUrl = async function (req, res) {
         mimeType,
       },
     });
-
   } catch (err) {
     console.error("[FileUploadController-getSignedUrl]-Error", err);
     return apiResponse.ErrorResponse(res, err);
