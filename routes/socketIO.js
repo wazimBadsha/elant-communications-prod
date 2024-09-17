@@ -118,7 +118,7 @@ const addReceiver = async (senderId, receiverId) => {
                 if (!senderId || !receiverId) {
                     throw new Error('SenderId or receiverId is missing.');
                 }
-                localId
+                
                 const chat = await sendPrivateMessage(senderId, receiverId, message, image, replyMessage, false, localId);
                 const blocked = await isUserBlocked(senderId, receiverId);
 
