@@ -63,7 +63,7 @@ const sendPrivateMessageOld = async (senderId, receiverId, message, image, reply
 
 
 
-const sendPrivateMessage = async (senderId, receiverId, message, image, replyMessage = null, system = false, localId) => {
+const sendPrivateMessageV1 = async (senderId, receiverId, message, image, replyMessage = null, system = false, localId) => {
     try {
         let imageLink = null;
 
@@ -108,6 +108,41 @@ const sendPrivateMessage = async (senderId, receiverId, message, image, replyMes
             receiver: receiverId,
             message: message,
             image: imageLink,
+            isDeleted: false,
+            repliedTo: parentId,
+            replyMessage: replyMessage,
+            status: system === true ? CHAT_STATUS_SEEN : CHAT_STATUS_SENT,
+            system: system,
+        });
+
+        await chat.save();
+        await chat.populate([
+            { path: 'sender', select: '_id avatar_id name' },
+            { path: 'receiver', select: '_id avatar_id name' }
+        ]);
+
+        return chat;
+
+    } catch (error) {
+        console.error('Error in sendPrivateMessage function:', error);
+        throw error;
+    }
+};
+
+const sendPrivateMessage = async (senderId, receiverId, message, image, replyMessage = null, system = false, localId) => {
+    try {
+
+        let parentId = null;
+        if (replyMessage && replyMessage != null) {
+            parentId = replyMessage._id;
+        }
+    
+        const chat = new ChatModel({
+            localId: localId,
+            sender: senderId,
+            receiver: receiverId,
+            message: message,
+            image: image,
             isDeleted: false,
             repliedTo: parentId,
             replyMessage: replyMessage,
